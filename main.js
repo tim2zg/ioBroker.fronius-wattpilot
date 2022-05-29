@@ -87,7 +87,7 @@ class FroniusWattpilot extends utils.Adapter {
 					let somehasehedpass = undefined;
 
 					pbkdf2(password, this.sse, 100000, 256,
-						'sha512', (err, derivedKey) => {
+						"sha512", (err, derivedKey) => {
 
 							if (err) throw err;
 
@@ -601,12 +601,16 @@ class FroniusWattpilot extends utils.Adapter {
 				if (state.val === undefined) {
 					//console.log("error");
 				}
-				statesvalue = state.val?.toString().split(";");
+				if (state.val) {
+					statesvalue = state.val.toString().split(";");
+					const senddata = {"type": "setValue", "requestId": this.counter, "key": statesvalue[0], "value": parseInt(statesvalue[1])};
+					const tf = createHmac("sha256", this.ws.hashedpw).update(JSON.stringify(senddata)).digest("hex");
+					const senddtatasecure = {"type": "securedMsg", "data": JSON.stringify(senddata), "requestId": this.counter.toString() + "sm", "hmac": tf.toString()};
+					this.ws.send(JSON.stringify(senddtatasecure));
+				} else {
+					this.log.error("ERROR");
+				}
 				//console.log(statesvalue);
-				const senddata = {"type": "setValue", "requestId": this.counter, "key": statesvalue[0], "value": parseInt(statesvalue[1])};
-				const tf = createHmac("sha256", this.ws.hashedpw).update(JSON.stringify(senddata)).digest("hex");
-				const senddtatasecure = {"type": "securedMsg", "data": JSON.stringify(senddata), "requestId": this.counter.toString() + "sm", "hmac": tf.toString()};
-				this.ws.send(JSON.stringify(senddtatasecure));
 			}
 		} else {
 			// The state was deleted
