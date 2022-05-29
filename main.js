@@ -46,7 +46,7 @@ class FroniusWattpilot extends utils.Adapter {
 		this.log.info(password);
 		this.log.info(host);
 
-		if (host === undefined || password === undefined) {
+		if (host === undefined || password === undefined || password === "pass" || host === "ip-host") {
 			this.log.error("Pls use a valid Host and Password");
 		} else {
 			this.ws = new WebSocket("ws://" + host + "/ws");
