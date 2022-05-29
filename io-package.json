@@ -1,0 +1,101 @@
+{
+	"common": {
+		"name": "fronius-wattpilot",
+		"version": "0.0.2",
+		"news": {
+			"0.0.1": {
+				"en": "initial release",
+				"de": "Erstveröffentlichung",
+				"ru": "Начальная версия",
+				"pt": "lançamento inicial",
+				"nl": "Eerste uitgave",
+				"fr": "Première version",
+				"it": "Versione iniziale",
+				"es": "Versión inicial",
+				"pl": "Pierwsze wydanie",
+				"zh-cn": "首次出版"
+			}
+		},
+		"title": "Fronius Wattpilot",
+		"titleLang": {
+			"en": "Fronius Wattpilot",
+			"de": "Fronius Wattpilot",
+			"ru": "Фрониус Ваттпилот",
+			"pt": "Fronius Wattpilot",
+			"nl": "Fronius Wattpilot",
+			"fr": "Fronius Wattpilot",
+			"it": "Fronius Wattpilot",
+			"es": "Fronius Wattpilot",
+			"pl": "Fronius Wattpilot",
+			"zh-cn": "Fronius Wattpilot"
+		},
+		"desc": {
+			"en": "fronius-wattpilot",
+			"de": "fronius-wattpilot",
+			"ru": "Фрониус-ваттпилот",
+			"pt": "fronius-wattpilot",
+			"nl": "Fronius Wattpilot",
+			"fr": "fronius-wattpilot",
+			"it": "fronius-wattpilot",
+			"es": "Fronius-wattpilot",
+			"pl": "fronius-wattpilot",
+			"zh-cn": "fronius-wattpilot"
+		},
+		"authors": [
+			"tim2zg <tim2zg@protonmail.com>"
+		],
+		"keywords": [
+			"ioBroker",
+			"template",
+			"Smart Home",
+			"home automation"
+		],
+		"license": "MIT",
+		"platform": "Javascript/Node.js",
+		"main": "main.js",
+		"icon": "fronius-wattpilot.png",
+		"enabled": true,
+		"extIcon": "https://raw.githubusercontent.com/tim2zg/ioBroker.fronius-wattpilot/main/admin/fronius-wattpilot.png",
+		"readme": "https://github.com/tim2zg/ioBroker.fronius-wattpilot/blob/main/README.md",
+		"loglevel": "info",
+		"mode": "daemon",
+		"type": "communication",
+		"compact": true,
+		"connectionType": "local",
+		"dataSource": "poll",
+		"materialize": true,
+		"dependencies": [
+			{
+				"js-controller": ">=2.0.0"
+			}
+		]
+	},
+	"native": {
+		"ip-host": "ip-host",
+		"pass": "pass"
+	},
+	"objects": [],
+	"instanceObjects": [
+		{
+			"_id": "info",
+			"type": "channel",
+			"common": {
+				"name": "Information"
+			},
+			"native": {}
+		},
+		{
+			"_id": "info.connection",
+			"type": "state",
+			"common": {
+				"role": "indicator.connected",
+				"name": "Device or service connected",
+				"type": "boolean",
+				"read": true,
+				"write": false,
+				"def": false
+			},
+			"native": {}
+		}
+	]
+}
