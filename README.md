@@ -14,8 +14,15 @@
 Barebones implementation of the unofficial Fronius Watt pilot (https://www.fronius.com/de-ch/switzerland/solarenergie/installateure-partner/technische-daten/alle-produkte/l%C3%B6sungen/fronius-wattpilot) API. Based on https://github.com/joscha82/wattpilot.
 I’m only 15 years old, and my code style/quality is really bad. Hope you can use it. 
 
+I don't take the responsibility for your device. With this API you can access the device directly, be careful. 
 
 ## Changelog
+
+### 0.0.3
+* (tim2zg) Parser added
+
+### 0.0.2
+* (tim2zg) Bug fixed
 
 ### 0.0.1
 * (tim2zg) initial release
