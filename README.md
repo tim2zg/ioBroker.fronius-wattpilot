@@ -18,6 +18,9 @@ I don't take the responsibility for your device. With this API you can access th
 
 ## Changelog
 
+### 0.0.4
+* (tim2zg) Parser option added
+
 ### 0.0.3
 * (tim2zg) Parser added
 

@@ -1,7 +1,7 @@
 {
 	"common": {
 		"name": "fronius-wattpilot",
-		"version": "0.0.3",
+		"version": "0.0.4",
 		"news": {
 			"0.0.1": {
 				"en": "initial release",
@@ -72,7 +72,8 @@
 	},
 	"native": {
 		"ip-host": "ip-host",
-		"pass": "pass"
+		"pass": "pass",
+		"parser": true
 	},
 	"objects": [],
 	"instanceObjects": [

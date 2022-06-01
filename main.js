@@ -43,7 +43,7 @@ class FroniusWattpilot extends utils.Adapter {
 		this.setState("info.connection", false, true);
 		const host = this.config["ip-host"];
 		const password = this.config.pass;
-		const doparsedata = true;
+		const doparsedata = this.config.parser;
 		this.log.info("Try to connect to: " + host);
 
 		if (host === undefined || password === undefined || password === "pass" || host === "ip-host") {
