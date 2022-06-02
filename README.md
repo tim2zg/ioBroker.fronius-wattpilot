@@ -21,7 +21,7 @@ I don't take the responsibility for your device. With this API you can access th
     Placeholder for the next version (at the beginning of the line):
     ## **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 1.0.1 (2022-06-02)
 -Tests
 
 ### 1.0.0 (2022-06-02)

@@ -1,8 +1,20 @@
 {
   "common": {
     "name": "fronius-wattpilot",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "news": {
+      "1.0.1": {
+        "en": "Tests",
+        "de": "Tests",
+        "ru": "Тесты",
+        "pt": "Testes",
+        "nl": "testen",
+        "fr": "Essais",
+        "it": "Prove",
+        "es": "Pruebas",
+        "pl": "Testy",
+        "zh-cn": "测试"
+      },
       "1.0.0": {
         "en": "Did some changes\nDid some more changes",
         "de": "Habe einige Änderungen vorgenommen\nHabe noch ein paar Änderungen vorgenommen",
