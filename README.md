@@ -16,19 +16,32 @@ I’m only 15 years old, and my code style/quality is really bad. Hope you can u
 
 I don't take the responsibility for your device. With this API you can access the device directly, be careful. 
 
-## Changelog
+# Changelog
+<!--
+    Placeholder for the next version (at the beginning of the line):
+    ## **WORK IN PROGRESS**
+-->
 
-### 0.0.4
-* (tim2zg) Parser option added
+## **WORK IN PROGRESS**
 
-### 0.0.3
-* (tim2zg) Parser added
+- Did some changes
+- Did some more changes
 
-### 0.0.2
-* (tim2zg) Bug fixed
+## v0.0.5 (2020-01-01)
+Better Code
 
-### 0.0.1
-* (tim2zg) initial release
+## v0.0.4 (2020-01-01)
+Parser option added
+
+## v0.0.3 (2020-01-01)
+Parser added
+
+## v0.0.2 (2020-01-01)
+Bug fixed
+
+## v0.0.1 (2020-01-01)
+Initial release
+
 
 ## License
 MIT License

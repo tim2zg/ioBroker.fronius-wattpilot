@@ -76,6 +76,12 @@
 		"parser": true
 	},
 	"objects": [],
+	"protectedNative": [
+		"pass"
+	],
+	"encryptedNative": [
+		"pass"
+	],
 	"instanceObjects": [
 		{
 			"_id": "info",
