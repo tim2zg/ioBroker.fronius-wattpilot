@@ -1,6 +1,6 @@
 {
   "name": "iobroker.fronius-wattpilot",
-  "version": "0.0.4",
+  "version": "1.0.0",
   "description": "fronius-wattpilot",
   "author": {
     "name": "tim2zg",
