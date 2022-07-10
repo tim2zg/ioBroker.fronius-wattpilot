@@ -21,8 +21,10 @@ I don't take the responsibility for your device. With this API you can access th
     Placeholder for the next version (at the beginning of the line):
     ## **WORK IN PROGRESS**
 -->
-### 1.1.0 (2022-07-10)
+### **WORK IN PROGRESS**
+-   Fixed NPM Versions hopefully
 
+### 1.1.0 (2022-07-10)
 -   Added UselessPV and TimeStamp Parser, did some testing.
 
 ### 1.0.1 (2022-06-02)
