@@ -1,8 +1,20 @@
 {
   "common": {
     "name": "fronius-wattpilot",
-    "version": "1.1.0",
+    "version": "2.0.0",
     "news": {
+      "2.0.0": {
+        "en": "Fixed NPM Versions hopefully",
+        "de": "Feste NPM Versionen hoffentlich",
+        "ru": "Фиксированный NPM Версии надеемся",
+        "pt": "NPM fixo Versões esperançosamente",
+        "nl": "NPM Vertaling:",
+        "fr": "Fixed NPM Versions espérons-le",
+        "it": "NPM fisso Le versioni sperano",
+        "es": "NPM fijo Versiones con esperanza",
+        "pl": "Fixed NPM (ang.). Wersja nadzieja",
+        "zh-cn": "混合国家预防计划 希望"
+      },
       "1.0.1": {
         "en": "Tests",
         "de": "Tests",
