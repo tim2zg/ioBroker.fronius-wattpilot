@@ -269,6 +269,9 @@ class FroniusWattpilot extends utils.Adapter {
 						case "ffna":
 							await adapter.setStateAsync("serial", { val: data2["status"][DataKeyToParse], ack: true });
 							break;
+						case "efh8":
+							await adapter.setStateAsync("Leistung", { val: data2["status"][DataKeyToParse], ack: true });
+							break;
 					}
 				} else {
 					switch (DataKeyToParse) {
@@ -782,6 +785,21 @@ class FroniusWattpilot extends utils.Adapter {
 								native: {},
 							});
 							await adapter.setStateAsync("serial", { val: data2["status"][DataKeyToParse], ack: true });
+							statesToCreate.push(DataKeyToParse);
+							break;
+						case "efh8":
+							await adapter.setObjectNotExistsAsync("Leistung", {
+								type: "state",
+								common: {
+									name: "Leistung",
+									role: "level",
+									type: "string",
+									read: true,
+									write: false,
+								},
+								native: {},
+							});
+							await adapter.setStateAsync("Leistung", { val: data2["status"][DataKeyToParse], ack: true });
 							statesToCreate.push(DataKeyToParse);
 							break;
 					}
