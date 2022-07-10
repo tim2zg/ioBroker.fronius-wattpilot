@@ -12,7 +12,9 @@
 **Tests:** ![Test and Release](https://github.com/tim2zg/ioBroker.fronius-wattpilot/workflows/Test%20and%20Release/badge.svg)
 
 Barebones implementation of the unofficial Fronius Watt pilot (https://www.fronius.com/de-ch/switzerland/solarenergie/installateure-partner/technische-daten/alle-produkte/l%C3%B6sungen/fronius-wattpilot) API. Based on https://github.com/joscha82/wattpilot.
-I’m only 15 years old, and my code style/quality is really bad. Hope you can use it. 
+
+## How to install:
+Finish your normal installation in the Fronius Watt pilot app. Remember the Password! Then go to the Internet tap and connect your Pilot to your Wi-Fi. After the connection click again on the Wi-Fi name. You will see a page with more information about your Wi-Fi connection note the IP address down. You currently can install the adapter through the expert menu in your broker. After you create the instance, you will be prompted with a Password and IP address filed. Fill in the values you noted before and save the config. If you have done everything correctly the adapter will turn green after a while and you can see the incoming data in the objects tab.
 
 I don't take the responsibility for your device. With this API you can access the device directly, be careful. 
 
