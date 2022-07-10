@@ -269,8 +269,11 @@ class FroniusWattpilot extends utils.Adapter {
 						case "ffna":
 							await adapter.setStateAsync("serial", { val: data2["status"][DataKeyToParse], ack: true });
 							break;
-						case "efh8":
-							await adapter.setStateAsync("Leistung", { val: data2["status"][DataKeyToParse], ack: true });
+						case "utc":
+							await adapter.setStateAsync("TimeStamp", { val: data2["status"][DataKeyToParse], ack: true });
+							break;
+						case "pvopt_averagePGrid":
+							await adapter.setStateAsync("PVUselessPower", { val: data2["status"][DataKeyToParse], ack: true });
 							break;
 					}
 				} else {
@@ -787,11 +790,11 @@ class FroniusWattpilot extends utils.Adapter {
 							await adapter.setStateAsync("serial", { val: data2["status"][DataKeyToParse], ack: true });
 							statesToCreate.push(DataKeyToParse);
 							break;
-						case "efh8":
-							await adapter.setObjectNotExistsAsync("Leistung", {
+						case "utc":
+							await adapter.setObjectNotExistsAsync("TimeStamp", {
 								type: "state",
 								common: {
-									name: "Leistung",
+									name: "TimeStamp",
 									role: "level",
 									type: "string",
 									read: true,
@@ -799,7 +802,22 @@ class FroniusWattpilot extends utils.Adapter {
 								},
 								native: {},
 							});
-							await adapter.setStateAsync("Leistung", { val: data2["status"][DataKeyToParse], ack: true });
+							await adapter.setStateAsync("TimeStamp", { val: data2["status"][DataKeyToParse], ack: true });
+							statesToCreate.push(DataKeyToParse);
+							break;
+						case "pvopt_averagePGrid":
+							await adapter.setObjectNotExistsAsync("PVUselessPower", {
+								type: "state",
+								common: {
+									name: "PVUselessPower",
+									role: "level",
+									type: "number",
+									read: true,
+									write: false,
+								},
+								native: {},
+							});
+							await adapter.setStateAsync("PVUselessPower", { val: data2["status"][DataKeyToParse], ack: true });
 							statesToCreate.push(DataKeyToParse);
 							break;
 					}

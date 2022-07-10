@@ -23,9 +23,9 @@ I don't take the responsibility for your device. With this API you can access th
 -->
 
 
-## **WORK IN PROGRESS**
+### **WORK IN PROGRESS**
 
--   Added Leistung Parser, so you can see how much you charge. 
+-   Added UselessPV and TimeStamp Parser, did some testing.
 
 ### 1.0.1 (2022-06-02)
 -Tests
