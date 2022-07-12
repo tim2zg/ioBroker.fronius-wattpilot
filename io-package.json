@@ -1,8 +1,20 @@
 {
   "common": {
     "name": "fronius-wattpilot",
-    "version": "2.0.1",
+    "version": "2.0.2",
     "news": {
+      "2.0.2": {
+        "en": "Bug fixed",
+        "de": "Fehler behoben",
+        "ru": "Bug фиксированный",
+        "pt": "Bug corrigido",
+        "nl": "Bug gemaakt",
+        "fr": "Bug corrigé",
+        "it": "Bug fisso",
+        "es": "Error fijo",
+        "pl": "Bug",
+        "zh-cn": "Bug 固定"
+      },
       "2.0.1": {
         "en": "Added a how to install. Not to detail because currently not in stable repo.",
         "de": "Hinzugefügt ein wie zu installieren. Nicht zum Detail, weil derzeit nicht in stabiler Repo.",
