@@ -21,6 +21,7 @@ class FroniusWattpilot extends utils.Adapter {
 		this.on("unload", this.onUnload.bind(this));
 		this.ws = undefined;
 		this.sse = undefined;
+		this.hashedPass = undefined;
 		adapter = this;
 	}
 
@@ -33,15 +34,52 @@ class FroniusWattpilot extends utils.Adapter {
 		const HostToConnect = this.config["ip-host"];
 		const password = this.config.pass;
 		const useNormalParser = this.config.parser;
-		let hashedPass;
 		this.log.info("Try to connect to: " + HostToConnect);
 		if (HostToConnect === undefined || password === undefined || password === "pass" || HostToConnect === "ip-host") {
 			this.log.error("Pls use a valid Host and Password");
 		} else {
+			await this.setObjectNotExistsAsync("set_power", {
+				type: "state",
+				common: {
+					name: "set_power",
+					role: "level",
+					type: "number",
+					read: true,
+					write: true,
+				},
+				native: {},
+			});
+			this.subscribeStates("set_power");
+			await this.setObjectNotExistsAsync("set_mode", {
+				type: "state",
+				common: {
+					name: "set_mode",
+					role: "level",
+					type: "number",
+					read: true,
+					write: true,
+				},
+				native: {},
+			});
+			this.subscribeStates("set_mode");
+			await this.setObjectNotExistsAsync("set_state", {
+				type: "state",
+				common: {
+					name: "set_state",
+					role: "level",
+					type: "string",
+					read: true,
+					write: true,
+				},
+				native: {},
+			});
+			this.subscribeStates("set_state");
 			this.ws = new WebSocket("ws://" + HostToConnect + "/ws");
 			this.counter = 0;
 			this.ws.on("message", async (messageData) => {
 				messageData = JSON.parse(messageData);
+				console.log(messageData);
+
 				if (messageData["type"] === "response") {
 					if (useNormalParser) {
 						this.log.info("State set");
@@ -52,48 +90,19 @@ class FroniusWattpilot extends utils.Adapter {
 					}
 				} else if (messageData["type"] === "hello") {
 					this.sse = messageData["serial"];
-					if (useNormalParser) {
-						await this.setObjectNotExistsAsync("set_power", {
-							type: "state",
-							common: {
-								name: "set_power",
-								role: "level",
-								type: "number",
-								read: true,
-								write: true,
-							},
-							native: {},
-						});
-						this.subscribeStates("set_power");
-						await this.setObjectNotExistsAsync("set_mode", {
-							type: "state",
-							common: {
-								name: "set_mode",
-								role: "level",
-								type: "number",
-								read: true,
-								write: true,
-							},
-							native: {},
-						});
-						this.subscribeStates("set_mode");
-					} else {
-						await this.setObjectNotExistsAsync("set_state", {
-							type: "state",
-							common: {
-								name: "set_state",
-								role: "level",
-								type: "string",
-								read: true,
-								write: true,
-							},
-							native: {},
-						});
-						this.subscribeStates("set_state");
-					}
 				} else if (messageData["type"] === "authRequired") {
 					const sse = this.sse;
-					makeAuth(sse, messageData, this.ws);
+					// eslint-disable-next-line no-undef
+					const token3 = BigInt(Math.random() * 100000000000000000000000000000000).toString();
+					pbkdf2(password, sse, 100000, 256,
+						"sha512", (err, derivedKey) => {
+							if (err) throw err;
+							this.hashedPass = derivedKey.toString("base64").substr(0, 32);
+							const hash1 = createHash("sha256").update(messageData["token1"] + this.hashedPass).digest("hex");
+							const hash = createHash("sha256").update(token3 + messageData["token2"] + hash1).digest("hex");
+							const response = {"type": "auth", "token3": token3.toString(), "hash": hash.toString()};
+							this.ws.send(JSON.stringify(response));
+						});
 				} else if (messageData["type"] === "authSuccess") {
 					this.setState("info.connection", true, true);
 					this.log.info("Connected!");
@@ -104,19 +113,6 @@ class FroniusWattpilot extends utils.Adapter {
 			});
 		}
 
-		function makeAuth(sse, data, socket) {
-			// eslint-disable-next-line no-undef
-			const token3 = BigInt(Math.random() * 100000000000000000000000000000000).toString();
-			pbkdf2(password, sse, 100000, 256,
-				"sha512", (err, derivedKey) => {
-					if (err) throw err;
-					hashedPass = derivedKey.toString("base64").substr(0, 32);
-					const hash1 = createHash("sha256").update(data["token1"] + hashedPass).digest("hex");
-					const hash = createHash("sha256").update(token3 + data["token2"] + hash1).digest("hex");
-					const response = {"type": "auth", "token3": token3.toString(), "hash": hash.toString()};
-					socket.send(JSON.stringify(response));
-				});
-		}
 		function handleData(DataToHandle) {
 			if (useNormalParser) {
 				strictParser(DataToHandle);
@@ -913,6 +909,7 @@ class FroniusWattpilot extends utils.Adapter {
 	 */
 	onUnload(callback) {
 		try {
+			this.ws.send("disconnect");
 			this.ws.close();
 			this.setState("info.connection", false, true);
 			callback();
@@ -927,41 +924,55 @@ class FroniusWattpilot extends utils.Adapter {
 	 */
 	onStateChange(id, state) {
 		if (state) {
-			if (state.ack) {
-				if (id.includes("set_state")) {
-					this.counter = this.counter + 1;
-					let StateValue;
-					if (state.val === undefined) {
-						this.log.error("Wrong Value");
+			if (id.includes("set_state")) {
+				this.counter = this.counter + 1;
+				let StateValue;
+				if (state.val === undefined) {
+					this.log.error("Wrong Value");
+				}
+				if (state.val) {
+					// @ts-ignore
+					if (!state.val.includes(";")) {
+						return;
 					}
-					if (state.val) {
-						StateValue = state.val.toString().split(";");
-						const SendData = {"type": "setValue", "requestId": this.counter, "key": StateValue[0], "value": parseInt(StateValue[1])};
-						const tf = createHmac("sha256", this.ws.hashedpw).update(JSON.stringify(SendData)).digest("hex");
-						const SendDataToSource = {"type": "securedMsg", "data": JSON.stringify(SendData), "requestId": this.counter.toString() + "sm", "hmac": tf.toString()};
-						this.ws.send(JSON.stringify(SendDataToSource));
-					} else {
-						this.log.error("Wrong Value");
-					}
-				}
-				if (id.includes("set_power")) {
-					this.counter = this.counter + 1;
-					const SendData = {"type": "setValue", "requestId": this.counter, "key": "amp", "value": state.val};
-					const tf = createHmac("sha256", this.ws.hashedpw).update(JSON.stringify(SendData)).digest("hex");
-					const SendDataToSource = {"type": "securedMsg", "data": JSON.stringify(SendData), "requestId": this.counter.toString() + "sm", "hmac": tf.toString()};
+					StateValue = state.val.toString().split(";");
+					const SendData = {
+						"type": "setValue",
+						"requestId": this.counter,
+						"key": StateValue[0],
+						"value": parseInt(StateValue[1])
+					};
+					// @ts-ignore
+					const tf = createHmac("sha256", this.hashedPass).update(JSON.stringify(SendData)).digest("hex");
+					const SendDataToSource = {
+						"type": "securedMsg",
+						"data": JSON.stringify(SendData),
+						"requestId": this.counter.toString() + "sm",
+						"hmac": tf.toString()
+					};
 					this.ws.send(JSON.stringify(SendDataToSource));
+				} else {
+					this.log.error("Wrong Value");
 				}
-				if (id.includes("set_mode")) {
-					this.counter = this.counter + 1;
-					const SendData = {"type": "setValue", "requestId": this.counter, "key": "lmo", "value": state.val};
-					const tf = createHmac("sha256", this.ws.hashedpw).update(JSON.stringify(SendData)).digest("hex");
-					const SendDataToSource = {"type": "securedMsg", "data": JSON.stringify(SendData), "requestId": this.counter.toString() + "sm", "hmac": tf.toString()};
-					this.ws.send(JSON.stringify(SendDataToSource));
-				}
+			} else if (id.includes("set_power")) {
+				this.counter = this.counter + 1;
+				const SendData = {"type": "setValue", "requestId": this.counter, "key": "amp", "value": state.val};
+				// @ts-ignore
+				const tf = createHmac("sha256", this.hashedPass).update(JSON.stringify(SendData)).digest("hex");
+				const SendDataToSource = {"type": "securedMsg", "data": JSON.stringify(SendData), "requestId": this.counter.toString() + "sm", "hmac": tf.toString()};
+				this.ws.send(JSON.stringify(SendDataToSource));
+			} else if (id.includes("set_mode")) {
+				this.counter = this.counter + 1;
+				const SendData = {"type": "setValue", "requestId": this.counter, "key": "lmo", "value": state.val};
+				// @ts-ignore
+				const tf = createHmac("sha256", this.hashedPass).update(JSON.stringify(SendData)).digest("hex");
+				const SendDataToSource = {"type": "securedMsg", "data": JSON.stringify(SendData), "requestId": this.counter.toString() + "sm", "hmac": tf.toString()};
+				this.ws.send(JSON.stringify(SendDataToSource));
 			}
 		}
 	}
 }
+
 
 if (require.main !== module) {
 	/**
