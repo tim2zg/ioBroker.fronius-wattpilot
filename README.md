@@ -18,11 +18,25 @@ Finish your normal installation in the Fronius Watt pilot app. Remember the Pass
 
 I don't take the responsibility for your device. With this API you can access the device directly, be careful. 
 
+## What does the parser?
+Parser only writes the key points of the Wattpilot. If you want all the values, you can disable it. A documentation of the Datapoints is available here: https://github.com/joscha82/wattpilot/blob/main/API.md (Tanks to joscha82)
+
+## Set states?
+Yes, just write the State name than a semicolon and then the value in the set_state state.
+You can control the amp and the lmo stat directly via the set_power and the set_mode states.
+
+## What does this mess mean?
+Thanks to joscha82 we know: https://github.com/joscha82/wattpilot/blob/main/API.md
+
+
 # Changelog
 <!--
     Placeholder for the next version (at the beginning of the line):
     ## **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+- Updated Readme
+
 ### 2.0.2 (2022-07-12)
 -   Bug fixed
 
