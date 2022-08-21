@@ -1,8 +1,20 @@
 {
   "common": {
     "name": "fronius-wattpilot",
-    "version": "2.1.0",
+    "version": "2.2.0",
     "news": {
+      "2.2.0": {
+        "en": "Fixed Bugs",
+        "de": "Fehler behoben",
+        "ru": "Фиксированные баги",
+        "pt": "Bugs fixos",
+        "nl": "Quality over Quantity (QoQ) Releases Vertaling:",
+        "fr": "Correction de bugs",
+        "it": "Bug fissi",
+        "es": "Errores fijos",
+        "pl": "Fixed Bugs",
+        "zh-cn": "Fix Bugs"
+      },
       "2.1.0": {
         "en": "Min Node Version 16",
         "de": "Min Node Version 16",
@@ -74,18 +86,6 @@
         "es": "Pruebas",
         "pl": "Testy",
         "zh-cn": "测试"
-      },
-      "1.0.0": {
-        "en": "Did some changes\nDid some more changes",
-        "de": "Habe einige Änderungen vorgenommen\nHabe noch ein paar Änderungen vorgenommen",
-        "ru": "Сделал некоторые изменения\nСделал еще некоторые изменения",
-        "pt": "Fez algumas mudanças\nFez mais algumas mudanças",
-        "nl": "Heb wat veranderingen gedaan\nNog wat veranderd",
-        "fr": "A fait quelques changements\nA fait d'autres changements",
-        "it": "Ha apportato alcune modifiche\nHa apportato altre modifiche",
-        "es": "Hice algunos cambios\nHizo algunos cambios más",
-        "pl": "Czy jakieś zmiany\nZrobiłeś więcej zmian",
-        "zh-cn": "做了一些改变\n做了一些更多的改变"
       }
     },
     "title": "Fronius Wattpilot",
