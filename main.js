@@ -34,6 +34,7 @@ class FroniusWattpilot extends utils.Adapter {
 		const HostToConnect = this.config["ip-host"];
 		const password = this.config.pass;
 		const useNormalParser = this.config.parser;
+		const start = Date.now();
 		this.log.info("Try to connect to: " + HostToConnect);
 		if (HostToConnect === undefined || password === undefined || password === "pass" || HostToConnect === "ip-host") {
 			this.log.error("Pls use a valid Host and Password");
@@ -76,6 +77,11 @@ class FroniusWattpilot extends utils.Adapter {
 			this.subscribeStates("set_state");
 			this.ws = new WebSocket("ws://" + HostToConnect + "/ws");
 			this.counter = 0;
+			this.ws.on("error", function(error) {
+				const elapsed = Date.now() - start;
+				console.log("Socket closed after %dms", elapsed);
+				console.error(error);
+			});
 			this.ws.on("message", async (messageData) => {
 				messageData = JSON.parse(messageData);
 				console.log(messageData);

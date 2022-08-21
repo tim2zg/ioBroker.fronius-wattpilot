@@ -1,6 +1,6 @@
 {
   "name": "iobroker.fronius-wattpilot",
-  "version": "2.0.3",
+  "version": "2.1.0",
   "description": "fronius-wattpilot",
   "author": {
     "name": "tim2zg",
@@ -27,7 +27,7 @@
     "@iobroker/adapter-core": "^2.6.0",
     "iobroker.fronius-wattpilot": "^1.0.1",
     "ws": "^8.7.0",
-    "node" : ">=16.0.0"
+    "node": ">=16.0.0"
   },
   "devDependencies": {
     "@alcalzone/release-script": "3.0.0",
