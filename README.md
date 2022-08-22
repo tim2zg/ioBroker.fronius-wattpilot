@@ -34,6 +34,9 @@ Thanks to joscha82 we know: https://github.com/joscha82/wattpilot/blob/main/API.
     Placeholder for the next version (at the beginning of the line):
     ## **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+- Bug fixes
+
 ### 2.2.0 (2022-08-21)
 - Fixed Bugs
 
