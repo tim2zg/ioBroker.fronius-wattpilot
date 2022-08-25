@@ -1,7 +1,5 @@
 {
-  "engines": {
-    "node": ">=16.0.0"
-  },
+  "engines": { "node": ">=16.0.0" },
   "name": "iobroker.fronius-wattpilot",
   "version": "2.2.1",
   "description": "fronius-wattpilot",
