@@ -1,20 +1,8 @@
 {
   "common": {
     "name": "fronius-wattpilot",
-    "version": "2.2.2",
+    "version": "2.2.1",
     "news": {
-      "2.2.2": {
-        "en": "Bug fixes",
-        "de": "Fehlerbehebungen",
-        "ru": "Исправления ошибок",
-        "pt": "Correções de bugs",
-        "nl": "Bug repareert",
-        "fr": "Corrections",
-        "it": "Correzioni di bug",
-        "es": "Corrección de errores",
-        "pl": "Bug",
-        "zh-cn": "Bug fix"
-      },
       "2.2.1": {
         "en": "Bug fixes",
         "de": "Fehlerbehebungen",
@@ -86,6 +74,18 @@
         "es": "Agregó cómo instalar. No al detalle porque actualmente no en reposo estable.",
         "pl": "Wszystko, jak instalować. Nie ma szczegółów, ponieważ obecnie nie ma stabilnego repo.",
         "zh-cn": "增加如何安装。 由于目前没有稳定的输出,没有详细情况。."
+      },
+      "2.0.0": {
+        "en": "Fixed NPM Versions hopefully",
+        "de": "Feste NPM Versionen hoffentlich",
+        "ru": "Фиксированный NPM Версии надеемся",
+        "pt": "NPM fixo Versões esperançosamente",
+        "nl": "NPM Vertaling:",
+        "fr": "Fixed NPM Versions espérons-le",
+        "it": "NPM fisso Le versioni sperano",
+        "es": "NPM fijo Versiones con esperanza",
+        "pl": "Fixed NPM (ang.). Wersja nadzieja",
+        "zh-cn": "混合国家预防计划 希望"
       }
     },
     "title": "Fronius Wattpilot",
