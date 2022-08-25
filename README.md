@@ -29,11 +29,14 @@ You can control the amp and the lmo stat directly via the set_power and the set_
 Thanks to joscha82 we know: https://github.com/joscha82/wattpilot/blob/main/API.md
 
 
-# Changelog
+### Changelog
 <!--
     Placeholder for the next version (at the beginning of the line):
     ## **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+- Bug fixes
+
 ### 2.2.1 (2022-08-22)
 - Bug fixes
 
