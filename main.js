@@ -365,7 +365,7 @@ class FroniusWattpilot extends utils.Adapter {
 								common: {
 									name: "errorState",
 									role: "level",
-									type: "number",
+									type: "string",
 									read: true,
 									write: false,
 								},
@@ -631,11 +631,11 @@ class FroniusWattpilot extends utils.Adapter {
 								},
 								native: {},
 							});
-							await adapter.setStateAsync("power2", { val: data2["status"][DataKeyToParse][7] * 0.001, ack: true });
+							await adapter.setStateAsync("power1", { val: data2["status"][DataKeyToParse][7] * 0.001, ack: true });
 							await adapter.setObjectNotExistsAsync("power2", {
 								type: "state",
 								common: {
-									name: "power1",
+									name: "power2",
 									role: "level",
 									type: "number",
 									read: true,
@@ -718,7 +718,7 @@ class FroniusWattpilot extends utils.Adapter {
 								common: {
 									name: "firmware",
 									role: "level",
-									type: "number",
+									type: "string",
 									read: true,
 									write: false,
 								},
