@@ -286,7 +286,7 @@ class FroniusWattpilot extends utils.Adapter {
 								common: {
 									name: "AccessState",
 									role: "level",
-									type: "String",
+									type: "string",
 									read: true,
 									write: false,
 								},
@@ -305,7 +305,7 @@ class FroniusWattpilot extends utils.Adapter {
 								common: {
 									name: "cableType",
 									role: "level",
-									type: "String",
+									type: "string",
 									read: true,
 									write: false,
 								},
@@ -399,7 +399,7 @@ class FroniusWattpilot extends utils.Adapter {
 								common: {
 									name: "cableLock",
 									role: "level",
-									type: "String",
+									type: "string",
 									read: true,
 									write: false,
 								},
