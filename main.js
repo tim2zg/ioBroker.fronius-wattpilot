@@ -31,7 +31,7 @@ class FroniusWattpilot extends utils.Adapter {
 		const password = this.config.pass;
 		const useNormalParser = this.config.parser;
 		const start = Date.now();
-		
+
 		this.setState("info.connection", false, true);
 		this.log.info("Try to connect to: " + hostToConnect);
 
@@ -875,7 +875,7 @@ class FroniusWattpilot extends utils.Adapter {
 
 		async function dynamicParser(dataToParse) {
 			const dataToParse2 = dataToParse;
-			statesToCreate.length = 0; // Empty array to prevent infinit RAM-usage
+			statesToCreate.length = 0; // Empty array to prevent infinite RAM-usage
 
 			for (dataToParse in dataToParse["status"]) {
 				const keysToCreate = dataToParse.toString();

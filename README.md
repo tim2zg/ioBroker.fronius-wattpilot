@@ -410,7 +410,7 @@ Thanks to joscha82 we know: https://github.com/joscha82/wattpilot/blob/main/API.
     Placeholder for the next version (at the beginning of the line):
     ## **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 2.2.4 (2022-09-01)
 - SebastianHanz fixed infinite RAM-usage
 - added some description
 

@@ -1,8 +1,20 @@
 {
   "common": {
     "name": "fronius-wattpilot",
-    "version": "2.2.3",
+    "version": "2.2.4",
     "news": {
+      "2.2.4": {
+        "en": "SebastianHanz fixed infinite RAM-usage\nadded some description",
+        "de": "SebastianHanz fix unendliche RAM-Nutzung\nbeschreibung",
+        "ru": "SebastianHanz фиксированный бесконечный RAM-usage\nдобавлено описание",
+        "pt": "SebastianHanz fixou a utilização infinita de RAM\nadicionou alguma descrição",
+        "nl": "SebastianHanz heeft oneindige RAM-gebruik\nvoegde een beschrijving toe",
+        "fr": "SebastianHanz fixe infini RAM-usage\najouté une description",
+        "it": "SebastianHanz fisso infinito RAM-usage\naggiunto qualche descrizione",
+        "es": "SebastianHanz solucionó infinita RAM-usage\nañadido una descripción",
+        "pl": "SebastianHanz ustabilizował nieskończoną ilość pamięci RAM\ndodać do opisu",
+        "zh-cn": "Sebastian Haynz 固定在最后阶段\n附加说明"
+      },
       "2.2.3": {
         "en": "SebastianHanz fixed type-conflicts. Thank you!",
         "de": "SebastianHanz fixierte Typenkonflikte. Danke!",
@@ -74,18 +86,6 @@
         "es": "Readme actualizado",
         "pl": "Oficjalna strona Readme",
         "zh-cn": "最新读者"
-      },
-      "2.0.2": {
-        "en": "Bug fixed",
-        "de": "Fehler behoben",
-        "ru": "Bug фиксированный",
-        "pt": "Bug corrigido",
-        "nl": "Bug gemaakt",
-        "fr": "Bug corrigé",
-        "it": "Bug fisso",
-        "es": "Error fijo",
-        "pl": "Bug",
-        "zh-cn": "Bug 固定"
       }
     },
     "title": "Fronius Wattpilot",
