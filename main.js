@@ -829,8 +829,11 @@ class FroniusWattpilot extends utils.Adapter {
 
 		async function dynamicParser(DataToParse) {
 			const dataToParse2 = DataToParse;
+			statesToCreate.length=0; // Empty array to prevent infinit RAM-usage
+			
 			for (DataToParse in DataToParse["status"]) {
 				const KeysToCreate = DataToParse.toString();
+
 				if (KeysToCreate in statesToCreate) {
 					await adapter.setStateAsync(KeysToCreate, { val: dataToParse2["status"][KeysToCreate], ack: true });
 				} else {
