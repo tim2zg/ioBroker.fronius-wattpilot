@@ -1,8 +1,20 @@
 {
   "common": {
     "name": "fronius-wattpilot",
-    "version": "2.2.2",
+    "version": "2.2.3",
     "news": {
+      "2.2.3": {
+        "en": "SebastianHanz fixed type-conflicts. Thank you!",
+        "de": "SebastianHanz fixierte Typenkonflikte. Danke!",
+        "ru": "SebastianHanz фиксированные тип-конфликты. Спасибо!",
+        "pt": "SebastianHanz fixo tipo-conflitos. Obrigado!",
+        "nl": "SebastianHanz heeft type-conflicten gemaakt. Dank je!",
+        "fr": "SebastianHanz fixe type-conflicts. Merci !",
+        "it": "SebastianHanz ha riparato i conflitti di tipo. Grazie!",
+        "es": "SebastianHanz solucionó conflictos de tipo. ¡Gracias!",
+        "pl": "SebastianHanz stacjonował w typie. Dziękuję!",
+        "zh-cn": "Sebastian Haynz固定类型冲突。 谢!"
+      },
       "2.2.2": {
         "en": "Bug fixes",
         "de": "Fehlerbehebungen",
@@ -74,18 +86,6 @@
         "es": "Error fijo",
         "pl": "Bug",
         "zh-cn": "Bug 固定"
-      },
-      "2.0.1": {
-        "en": "Added a how to install. Not to detail because currently not in stable repo.",
-        "de": "Hinzugefügt ein wie zu installieren. Nicht zum Detail, weil derzeit nicht in stabiler Repo.",
-        "ru": "Добавлена возможность установки. Не подробно, потому что в настоящее время не в стабильной репо.",
-        "pt": "Adicionado um como instalar. Não aos detalhes porque atualmente não em repo estável.",
-        "nl": "Voegde een hoe te installeren. Niet voor detail, want momenteel niet in stabiele repo.",
-        "fr": "Ajout d'une façon d'installer. Ne pas détailler parce qu'actuellement pas en répo stable.",
-        "it": "Aggiunto un come installare. Non per dettaglio perché attualmente non in repo stabile.",
-        "es": "Agregó cómo instalar. No al detalle porque actualmente no en reposo estable.",
-        "pl": "Wszystko, jak instalować. Nie ma szczegółów, ponieważ obecnie nie ma stabilnego repo.",
-        "zh-cn": "增加如何安装。 由于目前没有稳定的输出,没有详细情况。."
       }
     },
     "title": "Fronius Wattpilot",
