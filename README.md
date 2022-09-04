@@ -77,7 +77,7 @@ Thanks to joscha82 we know: https://github.com/joscha82/wattpilot/blob/main/API.
     ## **WORK IN PROGRESS**
 -->
 
-## **WORK IN PROGRESS**
+### **WORK IN PROGRESS**
 - Updated README.md
 - Created "examples"-directory for sample applications
 - Added some translations
