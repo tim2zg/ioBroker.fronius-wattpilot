@@ -318,7 +318,7 @@ class FroniusWattpilot extends utils.Adapter {
 								common: {
 									name: "cableType",
 									role: "level",
-									type: "string",
+									type: "number",
 									read: true,
 									write: false,
 								},
