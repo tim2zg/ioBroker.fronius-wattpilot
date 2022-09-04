@@ -1,8 +1,20 @@
 {
   "common": {
     "name": "fronius-wattpilot",
-    "version": "2.2.4",
+    "version": "3.0.0",
     "news": {
+      "3.0.0": {
+        "en": "Updated README.md\nCreated \"examples\"-directory for sample applications\nAdded some translations\nRenamed checkbox \"Parser\" to something more intuitive\nFixxed #4: Datapoint \"map\" now gets created correctly\nFixxed #5: Password-characters are no longer visible\nFixxed type conflict of cableType",
+        "de": "Aktualisierte README.md\nErstellte Beispiele\"-Richtlinie für Probenanwendungen\nÜbersetzungen hinzugefügt\nUmbenennte Checkbox Parser zu etwas intuitiver\nFixxed #4: Datapoint Map wird jetzt richtig erstellt\nFixxed #5: Passwörter sind nicht mehr sichtbar\nFeste Art Konflikt des Kabels Art",
+        "ru": "Обновлено README.md\nСозданные примеры\"-директория для примерных приложений\nДобавлены некоторые переводы\nПереименованный checkbox Парсер к чему-то более интуитивно\nFixxed #4: карта Datapoint теперь создается правильно\nFixxed #5: Пароль-чартеры больше не видны\nФиксированный тип конфликта кабеля Тип",
+        "pt": "Atualizado README.md\nExemplos criados\"-diretório para aplicações de amostra\nAdicionado algumas traduções\nCaixa de verificação Renamed Parser para algo mais intuitivo\nFixxed #4: O mapa de datapoint agora é criado corretamente\nFixxed #5: Os caracteres de senha não são mais visíveis\nConflito de tipo fixo de cabo Tipo",
+        "nl": "Upded README\nGecreëerde voorbeelden\nVertaling:\nHernoemde chequebox Voor iets intuïtiefs\nVertaling:\nVertaling:\nQuality over Quantity (QoQ) Releases Vertaling: Type",
+        "fr": "Actualisé README.md\nExemples créés \"directoire pour des applications échantillon\nAjout de quelques traductions\nRenommée case à cocher Parser à quelque chose de plus intuitif\nCorrection #4: La carte Datapoint est maintenant créée correctement\nFixxed #5: Les caractères de mot de passe ne sont plus visibles\nType fixe conflit de câble Type",
+        "it": "Aggiornato README.md\nEsempi creati\"-directory per applicazioni campione\nAggiunto alcune traduzioni\nCheckbox rinominato Parser a qualcosa di più intuitivo\nFixxed #4: La mappa di Datapoint viene creata correttamente\nFixxed #5: I caratteri password non sono più visibili\nTipo fisso conflitto di cavo Tipo",
+        "es": "Actualizado README.md\nEjemplos creados\"-directorio para aplicaciones de muestra\nAñadido algunas traducciones\nRenamed checkbox Parser a algo más intuitivo\nFijación #4: El mapa de Datapoint ahora se crea correctamente\nFijación #5: Los caracteres de contraseña ya no son visibles\nConflicto tipo fijo de cable Tipo",
+        "pl": "README.md\nProduktywne przykłady dla aplikacji próbkowych\nDodać niektóre tłumaczenia\nRenamed checkbox Parser do czegoś bardziej intuicyjnego\nFixxa #4: Mapa danych została stworzona poprawnie\nFixxe #5: Nie są już widoczne\nKonflikt typu kabelowego Typ",
+        "zh-cn": "更新的中小企业\n抽样申请的举证\n增加一些翻译\n重新命名的检查箱 更多意外困难\n例4:数据点图现在正确地制作\n第5号:护照前导游不再见\n电缆冲突 类型"
+      },
       "2.2.4": {
         "en": "SebastianHanz fixed infinite RAM-usage\nadded some description",
         "de": "SebastianHanz fix unendliche RAM-Nutzung\nbeschreibung",
@@ -74,18 +86,6 @@
         "es": "Min Node Version 16",
         "pl": "Wersja 16",
         "zh-cn": "第16条"
-      },
-      "2.0.3": {
-        "en": "Updated Readme",
-        "de": "Aktualisierte Readme",
-        "ru": "Обновлено Readme",
-        "pt": "Readme atualizado",
-        "nl": "Vertaling:",
-        "fr": "Actualisé Readme",
-        "it": "Aggiornamento del Readme",
-        "es": "Readme actualizado",
-        "pl": "Oficjalna strona Readme",
-        "zh-cn": "最新读者"
       }
     },
     "title": "Fronius Wattpilot",
