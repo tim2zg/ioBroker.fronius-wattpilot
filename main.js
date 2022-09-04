@@ -881,7 +881,22 @@ class FroniusWattpilot extends utils.Adapter {
 				const keysToCreate = dataToParse.toString();
 
 				if (keysToCreate in statesToCreate) {
-					await adapter.setStateAsync(keysToCreate, { val: dataToParse2["status"][keysToCreate], ack: true });
+					if (keysToCreate === "map") {
+						await adapter.setObjectNotExistsAsync(keysToCreate, {
+							type: "state",
+							common: {
+								name: keysToCreate,
+								role: "level",
+								type: "object",
+								read: true,
+								write: false,
+							},
+							native: {},
+						});
+						await adapter.setStateAsync(keysToCreate, { val: JSON.stringify(dataToParse2["status"][keysToCreate]), ack: true });
+					} else {
+						await adapter.setStateAsync(keysToCreate, { val: dataToParse2["status"][keysToCreate], ack: true });
+					}
 				} else {
 					const dataJSON = JSON.stringify(dataToParse2["status"][keysToCreate]);
 					// @ts-ignore
