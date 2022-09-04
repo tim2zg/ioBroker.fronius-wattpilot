@@ -53,7 +53,7 @@ You can simply import it by copying the content of the example and insert it via
 The adapter connects to the WattPilots WebSocket and separates incoming data into ioBroker-datapoints you can use quite comfortable. 
 
 ## Get states
-By default the adapter only writes the key points of the Wattpilot. If you want all the possible values the API can deliver, uncheck the checkbox in the instance-settings.    
+By default, the adapter only writes the key points of the Wattpilot. If you want all the possible values the API can deliver, uncheck the checkbox in the instance-settings.    
 A documentation of the Datapoints is available here: https://github.com/joscha82/wattpilot/blob/main/API.md (Thanks to joscha82)
 
 ## Set states?
@@ -67,6 +67,9 @@ For example:
 ## What does this mess mean?
 Thanks to joscha82 we know: https://github.com/joscha82/wattpilot/blob/main/API.md
 
+## Developers
+- [SebastianHanz](https://github.com/SebastianHanz)
+- [tim2zg](https://github.com/tim2zg)
 
 ### Changelog
 <!--
@@ -74,8 +77,7 @@ Thanks to joscha82 we know: https://github.com/joscha82/wattpilot/blob/main/API.
     ## **WORK IN PROGRESS**
 -->
 
-<!--
-### x.x.x (2022-xx-xx)
+## **WORK IN PROGRESS**
 - Updated README.md
 - Created "examples"-directory for sample applications
 - Added some translations
@@ -83,8 +85,6 @@ Thanks to joscha82 we know: https://github.com/joscha82/wattpilot/blob/main/API.
 - Fixxed #4: Datapoint "map" now gets created correctly
 - Fixxed #5: Password-characters are no longer visible
 - Fixxed type conflict of cableType
--->
-
 
 ### 2.2.4 (2022-09-01)
 - SebastianHanz fixed infinite RAM-usage
