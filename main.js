@@ -27,15 +27,21 @@ class FroniusWattpilot extends utils.Adapter {
 	 */
 	async onReady() {
 		const statesToCreate = [];
-		const hostToConnect = this.config["ip-host"];
 		const password = this.config.pass;
 		const useNormalParser = this.config.parser;
+		let hostToConnect;
 		const start = Date.now();
+
+		if (this.config["cloud"]) {
+			hostToConnect = "wss://app.wattpilot.io/app/" + this.config["serial-number"] + "?version=1.2.9";
+		} else {
+			hostToConnect =  "ws://" + this.config["ip-host"] + "/ws";
+		}
 
 		this.setState("info.connection", false, true);
 		this.log.info("Try to connect to: " + hostToConnect);
 
-		if (hostToConnect === undefined || password === undefined || password === "pass" || hostToConnect === "ip-host") {
+		if (hostToConnect === undefined || password === undefined || password === "pass" || hostToConnect === "ws://ip-host/ws" || hostToConnect === "wss://app.wattpilot.io/app/XXXXXXXX?version=1.2.9") {
 			this.log.error("Please use a valid host and password");
 		} else {
 			await this.setObjectNotExistsAsync("set_power", {
@@ -74,7 +80,7 @@ class FroniusWattpilot extends utils.Adapter {
 				native: {},
 			});
 			this.subscribeStates("set_state");
-			this.ws = new WebSocket("ws://" + hostToConnect + "/ws");
+			this.ws = new WebSocket(hostToConnect);
 			this.counter = 0;
 			this.ws.on("error", function (error) {
 				const elapsed = Date.now() - start;
