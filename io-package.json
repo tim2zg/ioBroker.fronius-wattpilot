@@ -1,8 +1,20 @@
 {
   "common": {
     "name": "fronius-wattpilot",
-    "version": "3.0.0",
+    "version": "3.1.0",
     "news": {
+      "3.1.0": {
+        "en": "Added the option to use the cloud as a datasource\nUpdated GitHub workflows",
+        "de": "Hinzufügen der Option, die Cloud als Datenquelle zu verwenden\nAktualisierte GitHub-Workflows",
+        "ru": "Добавлена возможность использования облака в качестве источника данных\nОбновленные рабочие процессы GitHub",
+        "pt": "Adicionado a opção de usar a nuvem como um datasource\nFluxos de trabalho GitHub atualizados",
+        "nl": "Voeg de optie toe om de wolk als dataource te gebruiken\nQuality over Quantity (QoQ) Releases Vertaling:",
+        "fr": "Ajout de l'option d'utiliser le nuage comme source de données\nMise à jour des flux de travail GitHub",
+        "it": "Aggiunta l'opzione di utilizzare il cloud come datasource\nFlussi di lavoro aggiornati GitHub",
+        "es": "Se agregó la opción de utilizar la nube como fuente de datos\nActualización de los flujos de trabajo GitHub",
+        "pl": "Dodał opcję używania chmur jako źródła danych\nRezultaty prac GitHub",
+        "zh-cn": "增加利用云雾作为数据来源的选择\nB. 最新GitHub工作流程"
+      },
       "3.0.0": {
         "en": "Updated README.md\nCreated \"examples\"-directory for sample applications\nAdded some translations\nRenamed checkbox \"Parser\" to something more intuitive\nFixxed #4: Datapoint \"map\" now gets created correctly\nFixxed #5: Password-characters are no longer visible\nFixxed type conflict of cableType",
         "de": "Aktualisierte README.md\nErstellte Beispiele\"-Richtlinie für Probenanwendungen\nÜbersetzungen hinzugefügt\nUmbenennte Checkbox Parser zu etwas intuitiver\nFixxed #4: Datapoint Map wird jetzt richtig erstellt\nFixxed #5: Passwörter sind nicht mehr sichtbar\nFeste Art Konflikt des Kabels Art",
@@ -74,18 +86,6 @@
         "es": "Errores fijos",
         "pl": "Fixed Bugs",
         "zh-cn": "Fix Bugs"
-      },
-      "2.1.0": {
-        "en": "Min Node Version 16",
-        "de": "Min Node Version 16",
-        "ru": "Min Node версия 16",
-        "pt": "Min Node Versão 16",
-        "nl": "Min Node Vers",
-        "fr": "Min Node Version 16",
-        "it": "Min Node Versione 16",
-        "es": "Min Node Version 16",
-        "pl": "Wersja 16",
-        "zh-cn": "第16条"
       }
     },
     "title": "Fronius Wattpilot",

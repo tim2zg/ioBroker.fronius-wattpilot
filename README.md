@@ -76,7 +76,7 @@ Thanks to joscha82 we know: https://github.com/joscha82/wattpilot/blob/main/API.
     Placeholder for the next version (at the beginning of the line):
     ## **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 3.1.0 (2022-09-07)
 - Added the option to use the cloud as a datasource
 - Updated GitHub workflows
 
