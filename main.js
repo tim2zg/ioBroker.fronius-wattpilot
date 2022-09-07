@@ -35,7 +35,7 @@ class FroniusWattpilot extends utils.Adapter {
 		if (this.config["cloud"]) {
 			hostToConnect = "wss://app.wattpilot.io/app/" + this.config["serial-number"] + "?version=1.2.9";
 		} else {
-			hostToConnect =  "ws://" + this.config["ip-host"] + "/ws";
+			hostToConnect = "ws://" + this.config["ip-host"] + "/ws";
 		}
 
 		this.setState("info.connection", false, true);
@@ -860,18 +860,19 @@ class FroniusWattpilot extends utils.Adapter {
 							break;
 
 						case "pvopt_averagePGrid":
-							await adapter.setObjectNotExistsAsync("PVUselessPower", {
-								type: "state",
-								common: {
-									name: "PVUselessPower",
-									role: "level",
-									type: "number",
-									read: true,
-									write: false,
-								},
-								native: {},
-							});
-							await adapter.setStateAsync("PVUselessPower", { val: data2["status"][dataKeyToParse], ack: true });
+							createObjectAsync("PVUselessPower", "number", true, false);
+							//	await adapter.setObjectNotExistsAsync("PVUselessPower", {
+							//		type: "state",
+							//		common: {
+							//			name: "PVUselessPower",
+							//			role: "level",
+							//			type: "number",
+							//			read: true,
+							//			write: false,
+							//		},
+							//		native: {},
+							//	});
+							await setStateAsync("PVUselessPower", { val: data2["status"][dataKeyToParse], ack: true });
 							statesToCreate.push(dataKeyToParse);
 							break;
 					}
@@ -1054,6 +1055,26 @@ class FroniusWattpilot extends utils.Adapter {
 	}
 }
 
+/**
+* Is used to create not existing objects
+* @param {string} name
+* @param {string} type
+* @param {boolean} read
+* @param {boolean} write
+*/
+async function createObjectAsync(name, type, read, write) {
+	await adapter.setObjectNotExistsAsync(name, {
+		type: "state",
+		common: {
+			name: name,
+			role: "level",
+			type: type,
+			read: read,
+			write: write,
+		},
+		native: {},
+	});
+}
 
 if (require.main !== module) {
 	/**
