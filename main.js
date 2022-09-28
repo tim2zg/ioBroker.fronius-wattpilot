@@ -44,42 +44,16 @@ class FroniusWattpilot extends utils.Adapter {
 		if (hostToConnect === undefined || password === undefined || password === "pass" || hostToConnect === "ws://ip-host/ws" || hostToConnect === "wss://app.wattpilot.io/app/XXXXXXXX?version=1.2.9") {
 			this.log.error("Please use a valid host and password");
 		} else {
-			await this.setObjectNotExistsAsync("set_power", {
-				type: "state",
-				common: {
-					name: "set_power",
-					role: "level",
-					type: "number",
-					read: true,
-					write: true,
-				},
-				native: {},
-			});
+			await createObjectAsync("set_power", "number", true, true);
 			this.subscribeStates("set_power");
-			await this.setObjectNotExistsAsync("set_mode", {
-				type: "state",
-				common: {
-					name: "set_mode",
-					role: "level",
-					type: "number",
-					read: true,
-					write: true,
-				},
-				native: {},
-			});
+
+			await createObjectAsync("set_mode", "number", true, true);
 			this.subscribeStates("set_mode");
-			await this.setObjectNotExistsAsync("set_state", {
-				type: "state",
-				common: {
-					name: "set_state",
-					role: "level",
-					type: "string",
-					read: true,
-					write: true,
-				},
-				native: {},
-			});
+
+			await createObjectAsync("set_state", "string", true, true);
 			this.subscribeStates("set_state");
+
+
 			this.ws = new WebSocket(hostToConnect);
 			this.counter = 0;
 			this.ws.on("error", function (error) {
@@ -299,7 +273,7 @@ class FroniusWattpilot extends utils.Adapter {
 				} else {
 					switch (dataKeyToParse) {
 						case "acs":
-							createObjectAsync("AccessState", "string");
+							await createObjectAsync("AccessState", "string");
 
 							if (data2["status"][dataKeyToParse] === 0) {
 								await adapter.setStateAsync("AccessState", { val: "Open", ack: true });
@@ -310,31 +284,31 @@ class FroniusWattpilot extends utils.Adapter {
 							break;
 
 						case "cbl":
-							createObjectAsync("cableType", "number");
+							await createObjectAsync("cableType", "number");
 							await adapter.setStateAsync("cableType", { val: data2["status"][dataKeyToParse], ack: true });
 							statesToCreate.push(dataKeyToParse);
 							break;
 
 						case "fhz":
-							createObjectAsync("frequency", "number");
+							await createObjectAsync("frequency", "number");
 							await adapter.setStateAsync("frequency", { val: data2["status"][dataKeyToParse], ack: true });
 							statesToCreate.push(dataKeyToParse);
 							break;
 
 						case "pha":
-							createObjectAsync("phases", "string");
+							await createObjectAsync("phases", "string");
 							await adapter.setStateAsync("phases", { val: JSON.stringify(data2["status"][dataKeyToParse]), ack: true });
 							statesToCreate.push(dataKeyToParse);
 							break;
 
 						case "wh":
-							createObjectAsync("energyCounterSinceStart", "number");
+							await createObjectAsync("energyCounterSinceStart", "number");
 							await adapter.setStateAsync("energyCounterSinceStart", { val: data2["status"][dataKeyToParse], ack: true });
 							statesToCreate.push(dataKeyToParse);
 							break;
 
 						case "err":
-							createObjectAsync("errorState", "string");
+							await createObjectAsync("errorState", "string");
 
 							switch (data2["status"][dataKeyToParse]) {
 								case 0:
@@ -360,7 +334,7 @@ class FroniusWattpilot extends utils.Adapter {
 							break;
 
 						case "ust":
-							createObjectAsync("cableLock", "string");
+							await createObjectAsync("cableLock", "string");
 
 							switch (data2["status"][dataKeyToParse]) {
 								case 0:
@@ -377,25 +351,25 @@ class FroniusWattpilot extends utils.Adapter {
 							break;
 
 						case "eto":
-							createObjectAsync("energyCounterTotal", "number");
+							await createObjectAsync("energyCounterTotal", "number");
 							await adapter.setStateAsync("energyCounterTotal", { val: data2["status"][dataKeyToParse], ack: true });
 							statesToCreate.push(dataKeyToParse);
 							break;
 
 						case "cae":
-							createObjectAsync("cae", "boolean");
+							await createObjectAsync("cae", "boolean");
 							await adapter.setStateAsync("cae", { val: data2["status"][dataKeyToParse], ack: true });
 							statesToCreate.push(dataKeyToParse);
 							break;
 
 						case "cak":
-							createObjectAsync("cak", "string");
+							await createObjectAsync("cak", "string");
 							await adapter.setStateAsync("cak", { val: data2["status"][dataKeyToParse], ack: true });
 							statesToCreate.push(dataKeyToParse);
 							break;
 
 						case "lmo":
-							createObjectAsync("mode", "string");
+							await createObjectAsync("mode", "string");
 
 							switch (data2["status"][dataKeyToParse]) {
 								case 3:
@@ -412,7 +386,7 @@ class FroniusWattpilot extends utils.Adapter {
 							break;
 
 						case "car":
-							createObjectAsync("carConnected", "string");
+							await createObjectAsync("carConnected", "string");
 
 							switch (data2["status"][dataKeyToParse]) {
 								case 1:
@@ -432,7 +406,7 @@ class FroniusWattpilot extends utils.Adapter {
 							break;
 
 						case "alw":
-							createObjectAsync("AllowCharging", "boolean");
+							await createObjectAsync("AllowCharging", "boolean");
 
 							if (data2["status"][dataKeyToParse] === 0) {
 								await adapter.setStateAsync("AllowCharging", { val: false, ack: true });
@@ -443,71 +417,71 @@ class FroniusWattpilot extends utils.Adapter {
 							break;
 
 						case "nrg":
-							createObjectAsync("voltage1", "number");
+							await createObjectAsync("voltage1", "number");
 							await adapter.setStateAsync("voltage1", { val: data2["status"][dataKeyToParse][0], ack: true });
 
-							createObjectAsync("voltage2", "number");
+							await createObjectAsync("voltage2", "number");
 							await adapter.setStateAsync("voltage2", { val: data2["status"][dataKeyToParse][1], ack: true });
 
-							createObjectAsync("voltage3", "number");
+							await createObjectAsync("voltage3", "number");
 							await adapter.setStateAsync("voltage3", { val: data2["status"][dataKeyToParse][2], ack: true });
 
-							createObjectAsync("voltageN", "number");
+							await createObjectAsync("voltageN", "number");
 							await adapter.setStateAsync("voltageN", { val: data2["status"][dataKeyToParse][3], ack: true });
 
-							createObjectAsync("amps1", "number");
+							await createObjectAsync("amps1", "number");
 							await adapter.setStateAsync("amps1", { val: data2["status"][dataKeyToParse][4], ack: true });
 
-							createObjectAsync("amps2", "number");
+							await createObjectAsync("amps2", "number");
 							await adapter.setStateAsync("amps2", { val: data2["status"][dataKeyToParse][5], ack: true });
 
-							createObjectAsync("amps3", "number");
+							await createObjectAsync("amps3", "number");
 							await adapter.setStateAsync("amps3", { val: data2["status"][dataKeyToParse][6], ack: true });
 
-							createObjectAsync("power1", "number");
+							await createObjectAsync("power1", "number");
 							await adapter.setStateAsync("power1", { val: data2["status"][dataKeyToParse][7] * 0.001, ack: true });
 
-							createObjectAsync("power2", "number");
+							await createObjectAsync("power2", "number");
 							await adapter.setStateAsync("power2", { val: data2["status"][dataKeyToParse][8] * 0.001, ack: true });
 
-							createObjectAsync("power3", "number");
+							await createObjectAsync("power3", "number");
 							await adapter.setStateAsync("power3", { val: data2["status"][dataKeyToParse][9] * 0.001, ack: true });
 
-							createObjectAsync("powerN", "number");
+							await createObjectAsync("powerN", "number");
 							await adapter.setStateAsync("powerN", { val: data2["status"][dataKeyToParse][10] * 0.001, ack: true });
 
-							createObjectAsync("power", "number");
+							await createObjectAsync("power", "number");
 							await adapter.setStateAsync("power", { val: data2["status"][dataKeyToParse][11] * 0.001, ack: true });
 
 							statesToCreate.push(dataKeyToParse);
 							break;
 
 						case "amp":
-							createObjectAsync("amp", "number");
+							await createObjectAsync("amp", "number");
 							await adapter.setStateAsync("amp", { val: data2["status"][dataKeyToParse], ack: true });
 							statesToCreate.push(dataKeyToParse);
 							break;
 
 						case "version":
-							createObjectAsync("version", "string");
+							await createObjectAsync("version", "string");
 							await adapter.setStateAsync("version", { val: data2["status"][dataKeyToParse], ack: true });
 							statesToCreate.push(dataKeyToParse);
 							break;
 
 						case "fwv":
-							createObjectAsync("firmware", "string");
+							await createObjectAsync("firmware", "string");
 							await adapter.setStateAsync("firmware", { val: data2["status"][dataKeyToParse], ack: true });
 							statesToCreate.push(dataKeyToParse);
 							break;
 
 						case "wss":
-							createObjectAsync("WifiSSID", "string");
+							await createObjectAsync("WifiSSID", "string");
 							await adapter.setStateAsync("WifiSSID", { val: data2["status"][dataKeyToParse], ack: true });
 							statesToCreate.push(dataKeyToParse);
 							break;
 
 						case "upd":
-							createObjectAsync("updateAvailable", "boolean");
+							await createObjectAsync("updateAvailable", "boolean");
 
 							if (data2["status"][dataKeyToParse] === "0") {
 								await adapter.setStateAsync("updateAvailable", { val: false, ack: true });
@@ -519,25 +493,25 @@ class FroniusWattpilot extends utils.Adapter {
 							break;
 
 						case "fna":
-							createObjectAsync("hostname", "string");
+							await createObjectAsync("hostname", "string");
 							await adapter.setStateAsync("hostname", { val: data2["status"][dataKeyToParse], ack: true });
 							statesToCreate.push(dataKeyToParse);
 							break;
 
 						case "ffna":
-							createObjectAsync("serial", "string");
+							await createObjectAsync("serial", "string");
 							await adapter.setStateAsync("serial", { val: data2["status"][dataKeyToParse], ack: true });
 							statesToCreate.push(dataKeyToParse);
 							break;
 
 						case "utc":
-							createObjectAsync("TimeStamp", "string");
+							await createObjectAsync("TimeStamp", "string");
 							await adapter.setStateAsync("TimeStamp", { val: data2["status"][dataKeyToParse], ack: true });
 							statesToCreate.push(dataKeyToParse);
 							break;
 
 						case "pvopt_averagePGrid":
-							createObjectAsync("PVUselessPower", "number");
+							await createObjectAsync("PVUselessPower", "number");
 							await adapter.setStateAsync("PVUselessPower", { val: data2["status"][dataKeyToParse], ack: true });
 							statesToCreate.push(dataKeyToParse);
 							break;
@@ -555,17 +529,7 @@ class FroniusWattpilot extends utils.Adapter {
 
 				if (keysToCreate in statesToCreate) {
 					if (keysToCreate === "map") {
-						await adapter.setObjectNotExistsAsync(keysToCreate, {
-							type: "state",
-							common: {
-								name: keysToCreate,
-								role: "level",
-								type: "object",
-								read: true,
-								write: false,
-							},
-							native: {},
-						});
+						await createObjectAsync(keysToCreate, "object");
 						await adapter.setStateAsync(keysToCreate, { val: JSON.stringify(dataToParse2["status"][keysToCreate]), ack: true });
 					} else {
 						await adapter.setStateAsync(keysToCreate, { val: dataToParse2["status"][keysToCreate], ack: true });
@@ -574,66 +538,19 @@ class FroniusWattpilot extends utils.Adapter {
 					const dataJSON = JSON.stringify(dataToParse2["status"][keysToCreate]);
 					// @ts-ignore
 					if (!isNaN(dataJSON)) {
-						await adapter.setObjectNotExistsAsync(keysToCreate, {
-							type: "state",
-							common: {
-								name: keysToCreate,
-								role: "level",
-								type: "number",
-								read: true,
-								write: false,
-							},
-							native: {},
-						});
+						await createObjectAsync(keysToCreate, "number");
+
 					} else if (dataJSON.toLowerCase() === "true" || dataJSON.toLowerCase() === "false") {
-						await adapter.setObjectNotExistsAsync(keysToCreate, {
-							type: "state",
-							common: {
-								name: keysToCreate,
-								role: "level",
-								type: "boolean",
-								read: true,
-								write: false,
-							},
-							native: {},
-						});
+						await createObjectAsync(keysToCreate, "boolean");
+
 					} else if (dataJSON.includes("[")) {
-						await adapter.setObjectNotExistsAsync(keysToCreate, {
-							type: "state",
-							common: {
-								name: keysToCreate,
-								role: "level",
-								type: "object",
-								read: true,
-								write: false,
-							},
-							native: {},
-						});
+						await createObjectAsync(keysToCreate, "object");
+
 					} else {
 						if (keysToCreate === "rcd") {
-							await adapter.setObjectNotExistsAsync(keysToCreate, {
-								type: "state",
-								common: {
-									name: keysToCreate,
-									role: "level",
-									type: "number",
-									read: true,
-									write: false,
-								},
-								native: {},
-							});
+							await createObjectAsync(keysToCreate, "number");
 						} else {
-							await adapter.setObjectNotExistsAsync(keysToCreate, {
-								type: "state",
-								common: {
-									name: keysToCreate,
-									role: "level",
-									type: "string",
-									read: true,
-									write: false,
-								},
-								native: {},
-							});
+							await createObjectAsync(keysToCreate, "string");
 						}
 					}
 					if (dataJSON.includes("[") || dataJSON.includes("{")) {
@@ -725,18 +642,18 @@ class FroniusWattpilot extends utils.Adapter {
 * Is used to create not existing objects
 * @param {string} name
 * @param {string} type
-* //@param {boolean} read
-* //@param {boolean} write
+* @param {boolean} read
+* @param {boolean} write
 */
-async function createObjectAsync(name, type) {
+async function createObjectAsync(name, type, read = true, write = false) {
 	await adapter.setObjectNotExistsAsync(name, {
 		type: "state",
 		common: {
 			name: name,
 			role: "level",
 			type: type,
-			read: true,
-			write: false,
+			read: read,
+			write: write,
 		},
 		native: {},
 	});
