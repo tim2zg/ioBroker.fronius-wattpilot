@@ -1,8 +1,20 @@
 {
   "common": {
     "name": "fronius-wattpilot",
-    "version": "3.1.0",
+    "version": "3.2.0",
     "news": {
+      "3.2.0": {
+        "en": "Implemented reconnecting\nShrank code down",
+        "de": "Ergänzende Umschaltung\nShrank code down",
+        "ru": "Реализовано переподключение\nShrank код вниз",
+        "pt": "Reconexão implementada\nCódigo de Shrank para baixo",
+        "nl": "Vertaling:\nShrank code",
+        "fr": "Reconnexion appliquée\nCode de triage",
+        "it": "Ricollegamento attuato\nCodice Shrank",
+        "es": "Reconexión aplicada\nCódigo Shrank abajo",
+        "pl": "Implementacja\nKod Shranka",
+        "zh-cn": "执行重新连接\nHrank守则"
+      },
       "3.1.0": {
         "en": "Added the option to use the cloud as a datasource\nUpdated GitHub workflows",
         "de": "Hinzufügen der Option, die Cloud als Datenquelle zu verwenden\nAktualisierte GitHub-Workflows",
@@ -74,18 +86,6 @@
         "es": "Corrección de errores",
         "pl": "Bug",
         "zh-cn": "Bug fix"
-      },
-      "2.2.0": {
-        "en": "Fixed Bugs",
-        "de": "Fehler behoben",
-        "ru": "Фиксированные баги",
-        "pt": "Bugs fixos",
-        "nl": "Quality over Quantity (QoQ) Releases Vertaling:",
-        "fr": "Correction de bugs",
-        "it": "Bug fissi",
-        "es": "Errores fijos",
-        "pl": "Fixed Bugs",
-        "zh-cn": "Fix Bugs"
       }
     },
     "title": "Fronius Wattpilot",
