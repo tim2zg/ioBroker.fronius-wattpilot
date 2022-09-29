@@ -30,7 +30,10 @@ class FroniusWattpilot extends utils.Adapter {
 		const password = this.config.pass;
 		const useNormalParser = this.config.parser;
 		let hostToConnect;
+		let lastUpdate = Date.now();
 		const start = Date.now();
+
+		setInterval(checkUpTime, 1000 * 60 * 2.5);
 
 		if (this.config["cloud"]) {
 			hostToConnect = "wss://app.wattpilot.io/app/" + this.config["serial-number"] + "?version=1.2.9";
@@ -100,6 +103,7 @@ class FroniusWattpilot extends utils.Adapter {
 
 
 		function handleData(dataToHandle) {
+			lastUpdate = Date.now();
 			if (useNormalParser) {
 				strictParser(dataToHandle);
 			} else {
@@ -520,6 +524,15 @@ class FroniusWattpilot extends utils.Adapter {
 			}
 		}
 
+		async function checkUpTime() {
+			if((Date.now() - lastUpdate) <= (5 * 60 * 1000)) {
+				// Connection closed
+				this.ws = new WebSocket(hostToConnect);
+				// Trying to reconnect
+				console.info("Try to reconnect...");
+			}
+		}
+
 		async function dynamicParser(dataToParse) {
 			const dataToParse2 = dataToParse;
 			statesToCreate.length = 0; // Empty array to prevent infinite RAM-usage
@@ -666,4 +679,4 @@ if (require.main !== module) {
 	module.exports = (options) => new FroniusWattpilot(options);
 } else {
 	new FroniusWattpilot();
-}
+} // Nice Line...
