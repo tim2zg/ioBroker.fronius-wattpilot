@@ -666,7 +666,7 @@ async function createObjectAsync(name, type, read = true, write = false) {
 			role: "level",
 			type: type,
 			read: read,
-			write: write,
+			write: write,  // Nice Line...
 		},
 		native: {},
 	});
@@ -679,4 +679,4 @@ if (require.main !== module) {
 	module.exports = (options) => new FroniusWattpilot(options);
 } else {
 	new FroniusWattpilot();
-} // Nice Line...
+}
