@@ -14,20 +14,32 @@ systemDictionary = {
 		"pl": "Ustawienia adaptera dla fronius-wattpilot",
 		"zh-cn": "fronius-wattpilot的适配器设置"
 	},
-	"IP-Address": {
-		"en": "IP-Address",
-		"de": "IP-Adresse",
-		"ru": "IP-адрес",
-		"pt": "Endereço IP",
-		"nl": "IP-Addres",
-		"fr": "IP-Address",
-		"it": "Indirizzo IP",
-		"es": "IP-Address",
-		"pl": "IP-Address",
-		"zh-cn": "IP-Address"
+	"IP-Address (If you use Cloud leave blank)": {
+		"en": "IP-Address (If you use Cloud leave blank)",
+		"de": "IP-Adresse (Bei Verwendung der Cloud, hier nichts eintragen)",
+		"ru": "IP-адрес (Если вы используете облако оставить пустым)",
+		"pt": "Endereço IP (Se você usar Nuvem deixa em branco)",
+		"nl": "IP-Addres Als je Cloud gebruikt, laat dan los",
+		"fr": "IP-Address (Si vous utilisez Cloud leave blank)",
+		"it": "Indirizzo IP (Se si utilizza Cloud lasciare vuoto)",
+		"es": "IP-Address (Si usas Cloud Leave blank)",
+		"pl": "IP-Address (Jeśli używamy pustego rzutu)",
+		"zh-cn": "IP-Address (请你使用Cloud 空白)"
 	},
-	"Only read most common datapoints": {
-		"en": "Only read most common datapoints",
+	"Not recommended in a local environment": {
+		"en": "Not recommended in a local environment",
+		"de": "Nicht empfohlen in einer lokalen Umgebung",
+		"ru": "Не рекомендуется в локальной среде",
+		"pt": "Não recomendado em um ambiente local",
+		"nl": "Niet aanbevolen in een lokale omgeving",
+		"fr": "Non recommandé dans un environnement local",
+		"it": "Non raccomandato in un ambiente locale",
+		"es": "No recomendado en un entorno local",
+		"pl": "Nie rekomendowany w środowisku lokalnym",
+		"zh-cn": "地方环境建议"
+	},
+	"Only read most common data-points": {
+		"en": "Only read most common data-points",
 		"de": "Nur die gängigsten Datenpunkte lesen",
 		"ru": "Только читайте наиболее распространенные данные",
 		"pt": "Apenas leia os datapoints mais comuns",
@@ -50,6 +62,18 @@ systemDictionary = {
 		"pl": "Password",
 		"zh-cn": "护照"
 	},
+	"Serial Number (Only in Cloud mode)": {
+		"en": "Serial Number (Only in Cloud mode)",
+		"de": "Seriennummer (nur im Cloud-Modus)",
+		"ru": "Серийный номер (только в облачном режиме)",
+		"pt": "Número de série (apenas no modo Cloud)",
+		"nl": "Serienummer (Only in Cloud mode)",
+		"fr": "Numéro de série (uniquement en mode Cloud)",
+		"it": "Numero seriale (solo in modalità Cloud)",
+		"es": "Número de serie (sólo en modo Cloud)",
+		"pl": "Serial Number (ang.)",
+		"zh-cn": "数量(在Cloud模式)"
+	},
 	"Uncheck to get any data available from API": {
 		"en": "Uncheck to get any data available from API",
 		"de": "Deaktivieren um alle verfügbaren Daten der API auszulesen",
@@ -61,5 +85,17 @@ systemDictionary = {
 		"es": "Desmarque para obtener los datos disponibles en la API",
 		"pl": "Nie sprawdzaj czy dane dostępne są z API",
 		"zh-cn": "核对获得非专利计划提供的任何数据"
+	},
+	"Use cloud to get data from the Pilot": {
+		"en": "Use cloud to get data from the Pilot",
+		"de": "Cloud verwenden, um Daten vom Pilot zu erhalten",
+		"ru": "Используйте облако, чтобы получить данные с пилота",
+		"pt": "Use nuvem para obter dados do piloto",
+		"nl": "Gebruik wolk om Data van de Pilot te halen",
+		"fr": "Utilisez le nuage pour obtenir des données du pilote",
+		"it": "Usa cloud per ottenere i dati dal pilota",
+		"es": "Utilice la nube para obtener datos del Piloto",
+		"pl": "Użycie chmur dostarczenia danych z pilota",
+		"zh-cn": "利用云雾器从试验中获得数据"
 	}
 };
