@@ -539,7 +539,7 @@ class FroniusWattpilot extends utils.Adapter {
 			if((lastUpdate - Date.now()) <= (60 * 1000)) {
 				// Trying to reconnect
 				logger.info("Try to reconnect... Connection LOST!");
-				adapter.setState("set_state", false, true);
+				adapter.setState("info.connection", true, true);
 				createWsConnection();
 			}
 		}
