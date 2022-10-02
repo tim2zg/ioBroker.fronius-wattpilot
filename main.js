@@ -4,6 +4,12 @@ const WebSocket = require("ws");
 const { createHash, createHmac, pbkdf2 } = require("crypto");
 let adapter;
 
+let ws = undefined;
+let counter = 0;
+let sse = undefined;
+let hashedPass = undefined;
+let lastUpdate = Date.now();
+
 class FroniusWattpilot extends utils.Adapter {
 	/**
 	 * @param {Partial<utils.AdapterOptions>} [options={}]
@@ -16,12 +22,8 @@ class FroniusWattpilot extends utils.Adapter {
 		this.on("ready", this.onReady.bind(this));
 		this.on("stateChange", this.onStateChange.bind(this));
 		this.on("unload", this.onUnload.bind(this));
-		this.ws = undefined;
-		this.sse = undefined;
-		this.hashedPass = undefined;
 		adapter = this;
 	}
-
 	/**
 	 * Is called when databases are connected and adapter received configuration.
 	 */
@@ -30,22 +32,22 @@ class FroniusWattpilot extends utils.Adapter {
 		const password = this.config.pass;
 		const useNormalParser = this.config.parser;
 		let hostToConnect;
-		let lastUpdate = Date.now();
 		const start = Date.now();
+		const logger = this.log;
 
-		setInterval(checkUpTime, 1000 * 60 * 2.5);
+		this.connectionUpTimeMonitor = setInterval(checkUpTime, 1000 * 60 * 2.5);
 
 		if (this.config["cloud"]) {
-			hostToConnect = "wss://app.wattpilot.io/app/" + this.config["serial-number"] + "?version=1.2.9";
+			hostToConnect = "ws://app.wattpilot.io/app/" + this.config["serial-number"] + "?version=1.2.9";
 		} else {
 			hostToConnect = "ws://" + this.config["ip-host"] + "/ws";
 		}
 
 		this.setState("info.connection", false, true);
-		this.log.info("Try to connect to: " + hostToConnect);
+		logger.info("Try to connect to: " + hostToConnect);
 
 		if (hostToConnect === undefined || password === undefined || password === "pass" || hostToConnect === "ws://ip-host/ws" || hostToConnect === "wss://app.wattpilot.io/app/XXXXXXXX?version=1.2.9") {
-			this.log.error("Please use a valid host and password");
+			logger.error("Please use a valid host and password");
 		} else {
 			await createObjectAsync("set_power", "number", true, true);
 			this.subscribeStates("set_power");
@@ -56,48 +58,56 @@ class FroniusWattpilot extends utils.Adapter {
 			await createObjectAsync("set_state", "string", true, true);
 			this.subscribeStates("set_state");
 
+			createWsConnection();
+		}
 
-			this.ws = new WebSocket(hostToConnect);
-			this.counter = 0;
-			this.ws.on("error", function (error) {
+		function createWsConnection() {
+			ws = new WebSocket(hostToConnect, { handshakeTimeout: 5000});
+			counter = 0;
+
+			ws.addEventListener("error", () => { // Handle error
 				const elapsed = Date.now() - start;
-				console.log("Socket closed after %dms", elapsed);
-				console.error(error);
+				logger.error("Error after " + elapsed + "ms");
+				logger.error("Please check your host! Seams like your host is Offline, attempt to reconnect in 2.5 minutes");
 			});
-			this.ws.on("message", async (messageData) => {
-				messageData = JSON.parse(messageData);
-				console.log(messageData);
+
+			ws.on("message", async (messageData) => { // Handle on Message event
+
+				messageData = JSON.parse(messageData); // Convert Message to JSON
+				//logger.info(messageData["type"].toString()); // 4 Debug only
 
 				if (messageData["type"] === "response") {
 					if (useNormalParser) {
-						this.log.info("State set");
+						logger.info("State set"); // Incomming data from set State is OK
 					} else {
-						if (messageData["type"] === true) {
-							this.setState("set_state", true, true);
+						if (messageData["type"] === true) { // Incomming data from set State is OK
+							adapter.setState("set_state", true, true);
 						}
 					}
-				} else if (messageData["type"] === "hello") {
-					this.sse = messageData["serial"];
-				} else if (messageData["type"] === "authRequired") {
-					const sse = this.sse;
+
+				} else if (messageData["type"] === "hello") { // Handle Hello Message
+					sse = messageData["serial"];
+
+				} else if (messageData["type"] === "authRequired") { // Handle Auth Message
+					// Using SSE from Hello Message to craft auth Message
 					// eslint-disable-next-line no-undef
 					const token3 = BigInt(Math.random() * 100000000000000000000000000000000).toString();
 					pbkdf2(password, sse, 100000, 256,
 						"sha512", (err, derivedKey) => {
 							if (err) throw err;
-							this.hashedPass = derivedKey.toString("base64").substr(0, 32);
-							const hash1 = createHash("sha256").update(messageData["token1"] + this.hashedPass).digest("hex");
+							hashedPass = derivedKey.toString("base64").substr(0, 32);
+							const hash1 = createHash("sha256").update(messageData["token1"] + hashedPass).digest("hex");
 							const hash = createHash("sha256").update(token3 + messageData["token2"] + hash1).digest("hex");
-							const response = { "type": "auth", "token3": token3.toString(), "hash": hash.toString() };
-							this.ws.send(JSON.stringify(response));
+							const response = {"type": "auth", "token3": token3.toString(), "hash": hash.toString()};
+							ws.send(JSON.stringify(response));
 						});
 				} else if (messageData["type"] === "authSuccess") {
-					this.setState("info.connection", true, true);
-					this.log.info("Connected!");
-				} else if (messageData["type"] === "authError") {
-					this.log.error("Password wrong!");
+					adapter.setState("info.connection", true, true); // Set Connection State to true if auth was successful
+					logger.info("Connected!");
+				} else if (messageData["type"] === "authError") { // Handle Auth Error
+					logger.error("Password wrong!");
 				}
-				handleData(messageData);
+				handleData(messageData); // Handle incoming Data
 			});
 		}
 
@@ -525,11 +535,12 @@ class FroniusWattpilot extends utils.Adapter {
 		}
 
 		async function checkUpTime() {
-			if((Date.now() - lastUpdate) <= (5 * 60 * 1000)) {
-				// Connection closed
-				this.ws = new WebSocket(hostToConnect);
+			//logger.info("checkUpTime");
+			if((lastUpdate - Date.now()) <= (60 * 1000)) {
 				// Trying to reconnect
-				console.info("Try to reconnect...");
+				logger.info("Try to reconnect... Connection LOST!");
+				adapter.setState("set_state", false, true);
+				createWsConnection();
 			}
 		}
 
@@ -584,9 +595,11 @@ class FroniusWattpilot extends utils.Adapter {
 	 */
 	onUnload(callback) {
 		try {
-			this.ws.send("disconnect");
-			this.ws.close();
-			this.setState("info.connection", false, true);
+			ws.send("disconnect");
+			ws.close();
+			ws = null;
+			clearInterval(this.connectionUpTimeMonitor);
+			adapter.setState("info.connection", false, true);
 			callback();
 		} catch (e) {
 			callback();
@@ -602,7 +615,8 @@ class FroniusWattpilot extends utils.Adapter {
 	onStateChange(id, state) {
 		if (state) {
 			if (id.includes("set_state")) {
-				this.counter = this.counter + 1;
+				this.log.info(adapter.counter);
+				counter = counter + 1;
 				let stateValue;
 				if (state.val === undefined) {
 					this.log.error("Wrong Value");
@@ -610,42 +624,41 @@ class FroniusWattpilot extends utils.Adapter {
 				if (state.val) {
 					// @ts-ignore
 					if (!state.val.includes(";")) {
+						this.log.error("Wrong Value");
 						return;
 					}
 					stateValue = state.val.toString().split(";");
 					const sendData = {
 						"type": "setValue",
-						"requestId": this.counter,
+						"requestId": counter,
 						"key": stateValue[0],
 						"value": parseInt(stateValue[1])
 					};
 					// @ts-ignore
-					const tf = createHmac("sha256", this.hashedPass).update(JSON.stringify(sendData)).digest("hex");
+					const tf = createHmac("sha256", hashedPass).update(JSON.stringify(sendData)).digest("hex");
 					const sendDataToSource = {
 						"type": "securedMsg",
 						"data": JSON.stringify(sendData),
-						"requestId": this.counter.toString() + "sm",
+						"requestId": counter.toString() + "sm",
 						"hmac": tf.toString()
 					};
-					this.ws.send(JSON.stringify(sendDataToSource));
+					ws.send(JSON.stringify(sendDataToSource));
 				} else {
 					this.log.error("Wrong Value");
 				}
 			} else if (id.includes("set_power")) {
-				this.counter = this.counter + 1;
-				const sendData = { "type": "setValue", "requestId": this.counter, "key": "amp", "value": state.val };
-				// @ts-ignore
-				const tf = createHmac("sha256", this.hashedPass).update(JSON.stringify(sendData)).digest("hex");
-				const sendDataToSource = { "type": "securedMsg", "data": JSON.stringify(sendData), "requestId": this.counter.toString() + "sm", "hmac": tf.toString() };
-				this.ws.send(JSON.stringify(sendDataToSource));
+				counter = counter + 1;
+				const sendData = { "type": "setValue", "requestId": counter, "key": "amp", "value": state.val };
+				const tf = createHmac("sha256", hashedPass).update(JSON.stringify(sendData)).digest("hex");
+				const sendDataToSource = { "type": "securedMsg", "data": JSON.stringify(sendData), "requestId": counter.toString() + "sm", "hmac": tf.toString() };
+				ws.send(JSON.stringify(sendDataToSource));
 
 			} else if (id.includes("set_mode")) {
-				this.counter = this.counter + 1;
-				const sendData = { "type": "setValue", "requestId": this.counter, "key": "lmo", "value": state.val };
-				// @ts-ignore
-				const tf = createHmac("sha256", this.hashedPass).update(JSON.stringify(sendData)).digest("hex");
-				const sendDataToSource = { "type": "securedMsg", "data": JSON.stringify(sendData), "requestId": this.counter.toString() + "sm", "hmac": tf.toString() };
-				this.ws.send(JSON.stringify(sendDataToSource));
+				counter = counter + 1;
+				const sendData = { "type": "setValue", "requestId": counter, "key": "lmo", "value": state.val };
+				const tf = createHmac("sha256", hashedPass).update(JSON.stringify(sendData)).digest("hex");
+				const sendDataToSource = { "type": "securedMsg", "data": JSON.stringify(sendData), "requestId": counter.toString() + "sm", "hmac": tf.toString() };
+				ws.send(JSON.stringify(sendDataToSource));
 			}
 		}
 	}
