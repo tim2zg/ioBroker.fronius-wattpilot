@@ -3,7 +3,7 @@
     "node": ">=16.0.0"
   },
   "name": "iobroker.fronius-wattpilot",
-  "version": "3.2.0",
+  "version": "3.2.1",
   "description": "fronius-wattpilot",
   "author": {
     "name": "tim2zg",

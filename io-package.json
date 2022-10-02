@@ -1,8 +1,20 @@
 {
   "common": {
     "name": "fronius-wattpilot",
-    "version": "3.2.0",
+    "version": "3.2.1",
     "news": {
+      "3.2.1": {
+        "en": "Fixed reconnecting to the WebSocket\nRestructured the code",
+        "de": "Reconnecting mit dem WebSocket behoben\nDen Code umstrukturieren",
+        "ru": "Исправлено переподключение к WebSocket\nПерестроен код",
+        "pt": "Reconexão fixa ao WebSocket\nReestruturação do código",
+        "nl": "Vertaling:\nHerstructureerde de code",
+        "fr": "Reconnecté fixe au WebSocket\nRestructurée du code",
+        "it": "Ricollegamento fisso al WebSocket\nRistrutturato il codice",
+        "es": "Conexión fija al WebSocket\nReestructurado el código",
+        "pl": "Fixed ponownie połączył się z WebSocket\nRestrukturyzacja kodu",
+        "zh-cn": "B. 固定与网站连接\nA. 守则的结构"
+      },
       "3.2.0": {
         "en": "Implemented reconnecting\nShrank code down",
         "de": "Ergänzende Umschaltung\nShrank code down",
@@ -64,18 +76,6 @@
         "zh-cn": "Sebastian Haynz固定类型冲突。 谢!"
       },
       "2.2.2": {
-        "en": "Bug fixes",
-        "de": "Fehlerbehebungen",
-        "ru": "Исправления ошибок",
-        "pt": "Correções de bugs",
-        "nl": "Bug repareert",
-        "fr": "Corrections",
-        "it": "Correzioni di bug",
-        "es": "Corrección de errores",
-        "pl": "Bug",
-        "zh-cn": "Bug fix"
-      },
-      "2.2.1": {
         "en": "Bug fixes",
         "de": "Fehlerbehebungen",
         "ru": "Исправления ошибок",
