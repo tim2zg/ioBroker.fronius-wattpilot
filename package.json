@@ -3,7 +3,7 @@
     "node": ">=16.0.0"
   },
   "name": "iobroker.fronius-wattpilot",
-  "version": "3.2.0",
+  "version": "3.2.1",
   "description": "fronius-wattpilot",
   "author": {
     "name": "tim2zg",
@@ -27,7 +27,7 @@
     "url": "https://github.com/tim2zg/ioBroker.fronius-wattpilot"
   },
   "dependencies": {
-    "@iobroker/adapter-core": "^2.6.0",
+    "@iobroker/adapter-core": "^2.6.6",
     "iobroker.fronius-wattpilot": "^1.0.1",
     "ws": "^8.8.1"
   },
