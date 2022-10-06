@@ -34,6 +34,7 @@ class FroniusWattpilot extends utils.Adapter {
 		let hostToConnect;
 		const start = Date.now();
 		const logger = this.log;
+		const freq = this.config.freq;
 
 		this.connectionUpTimeMonitor = setInterval(checkUpTime, 1000 * 60 * 2.5);
 
@@ -78,7 +79,12 @@ class FroniusWattpilot extends utils.Adapter {
 
 			ws.on("message", async (messageData) => { // Handle on Message event
 
-				messageData = JSON.parse(messageData); // Convert Message to JSON
+				try {
+					messageData = JSON.parse(messageData); // Convert Message to JSON
+				} catch (e) {
+					logger.error("Error on parsing JSON: " + e + " " + messageData);
+					logger.error("Pleas check your Pilot!");
+				}
 				//logger.info(messageData["type"].toString()); // 4 Debug only
 
 				if (messageData["type"] === "response") {
@@ -112,17 +118,18 @@ class FroniusWattpilot extends utils.Adapter {
 				} else if (messageData["type"] === "authError") { // Handle Auth Error
 					logger.error("Password wrong!");
 				}
-				handleData(messageData); // Handle incoming Data
+				if (lastUpdate + (1000 * freq) < Date.now()) {
+					lastUpdate = Date.now();
+					handleData(messageData);
+				} // Handle incoming Data
 			});
 		}
 
 
 		function handleData(dataToHandle) {
 			if (useNormalParser) {
-				lastUpdate = Date.now();
 				strictParser(dataToHandle);
 			} else {
-				lastUpdate = Date.now();
 				dynamicParser(dataToHandle);
 			}
 		}
@@ -542,7 +549,7 @@ class FroniusWattpilot extends utils.Adapter {
 
 		async function checkUpTime() {
 			//logger.info("checkUpTime");
-			if((lastUpdate - Date.now()) <= (2.5 * 60 * 1000)) {
+			if(((lastUpdate + (freq * 1000)) - Date.now()) <= (2.5 * 60 * 1000)) {
 				//logger.info("checkUpTime: lastUpdate: " + lastUpdate.toLocaleString() + " Date.now(): " + Date.now().toLocaleString());
 				// Trying to reconnect
 				logger.info("Try to reconnect... Connection LOST!");
@@ -602,7 +609,6 @@ class FroniusWattpilot extends utils.Adapter {
 	 */
 	onUnload(callback) {
 		try {
-			ws.send("disconnect");
 			ws.close();
 			ws = null;
 			clearInterval(this.connectionUpTimeMonitor);

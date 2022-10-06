@@ -145,6 +145,7 @@
   "native": {
     "ip-host": "ip-host",
     "pass": "pass",
+    "freq": 1,
     "serial-number": "XXXXXXXX",
     "parser": true,
     "cloud": false
