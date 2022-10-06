@@ -62,6 +62,11 @@ class FroniusWattpilot extends utils.Adapter {
 		}
 
 		function createWsConnection() {
+			if (ws !== undefined && ws.readyState === 1) {
+				ws.send("disconnect");
+				ws.close();
+				ws = undefined;
+			}
 			ws = new WebSocket(hostToConnect, { handshakeTimeout: 5000});
 			counter = 0;
 
@@ -113,10 +118,11 @@ class FroniusWattpilot extends utils.Adapter {
 
 
 		function handleData(dataToHandle) {
-			lastUpdate = Date.now();
 			if (useNormalParser) {
+				lastUpdate = Date.now();
 				strictParser(dataToHandle);
 			} else {
+				lastUpdate = Date.now();
 				dynamicParser(dataToHandle);
 			}
 		}
@@ -536,7 +542,8 @@ class FroniusWattpilot extends utils.Adapter {
 
 		async function checkUpTime() {
 			//logger.info("checkUpTime");
-			if((lastUpdate - Date.now()) <= (60 * 1000)) {
+			if((lastUpdate - Date.now()) <= (2.5 * 60 * 1000)) {
+				//logger.info("checkUpTime: lastUpdate: " + lastUpdate.toLocaleString() + " Date.now(): " + Date.now().toLocaleString());
 				// Trying to reconnect
 				logger.info("Try to reconnect... Connection LOST!");
 				adapter.setState("info.connection", true, true);
