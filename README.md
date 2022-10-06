@@ -76,6 +76,12 @@ Thanks to joscha82 we know: https://github.com/joscha82/wattpilot/blob/main/API.
     Placeholder for the next version (at the beginning of the line):
     ## **WORK IN PROGRESS**
 -->
+
+### **WORK IN PROGRESS**
+- Fixed reconnecting frequency
+- Fixed multiple Websocket connections
+- Added frequency handler
+
 ### 3.2.1 (2022-10-02)
 - Fixed reconnecting to the WebSocket
 - Restructured the code
