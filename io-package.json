@@ -1,8 +1,20 @@
 {
   "common": {
     "name": "fronius-wattpilot",
-    "version": "3.2.1",
+    "version": "3.2.2",
     "news": {
+      "3.2.2": {
+        "en": "Fixed reconnecting frequency\nFixed multiple Websocket connections\nAdded frequency handler",
+        "de": "Feste Wiederverbindungsfrequenz\nMehrfach behoben Websocket-Verbindungen\nZusätzlicher Frequenzgriff",
+        "ru": "Исправлена переподключение частоты\nИсправлено несколько Websocket соединения\nДобавлен частотный обработчик",
+        "pt": "Frequência de reconectação fixa\nCorrigido vários Conexões Websocket\nManipulador de frequência adicionado",
+        "nl": "Vertaling:\nVertaling: Websocket connecties\nFrequentiehandelaar",
+        "fr": "Fréquence de reconnectage fixe\nCorrection multiple Connexions Websocket\nAjout du gestionnaire de fréquences",
+        "it": "Frequenza di ricollegamento fissa\nRisolto multiplo Collegamenti web\nManigliere di frequenza aggiunto",
+        "es": "Frecuencia de reconexión fija\nMúltiples fijos Conexiones Websocket\nControlador de frecuencia",
+        "pl": "Fixed reconnection częstotliwości\nFixed multiple połączenia internetowe\nAdded częstotliwość",
+        "zh-cn": "固定的频率重新连接\n混合多种 网站链接\n增加频率"
+      },
       "3.2.1": {
         "en": "Fixed reconnecting to the WebSocket\nRestructured the code",
         "de": "Reconnecting mit dem WebSocket behoben\nDen Code umstrukturieren",
@@ -74,18 +86,6 @@
         "es": "SebastianHanz solucionó conflictos de tipo. ¡Gracias!",
         "pl": "SebastianHanz stacjonował w typie. Dziękuję!",
         "zh-cn": "Sebastian Haynz固定类型冲突。 谢!"
-      },
-      "2.2.2": {
-        "en": "Bug fixes",
-        "de": "Fehlerbehebungen",
-        "ru": "Исправления ошибок",
-        "pt": "Correções de bugs",
-        "nl": "Bug repareert",
-        "fr": "Corrections",
-        "it": "Correzioni di bug",
-        "es": "Corrección de errores",
-        "pl": "Bug",
-        "zh-cn": "Bug fix"
       }
     },
     "title": "Fronius Wattpilot",
