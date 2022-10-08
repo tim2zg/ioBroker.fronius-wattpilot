@@ -1,8 +1,20 @@
 {
   "common": {
     "name": "fronius-wattpilot",
-    "version": "3.2.2",
+    "version": "3.2.3",
     "news": {
+      "3.2.3": {
+        "en": "Bug fixed where the adapter would not respect the timout timer and would try to constantly reconnect to the WattPilot\nBug fixed where the adapter would send a wrong disconnect message to the WattPilot",
+        "de": "Fehler behoben, wo der Adapter den Timout-Timer nicht respektieren würde und versuchen würde, ständig wieder mit dem WattPilot zu verbinden\nFehler behoben, wo der Adapter eine falsche Trennmeldung an den WattPilot senden würde",
+        "ru": "Баг зафиксировал, где адаптер не будет уважать таймер timout и попытался бы постоянно переподключиться к WattPilot\nБаг исправил, где адаптер отправит неправильный отключение сообщения в WattPilot",
+        "pt": "Bug corrigido onde o adaptador não respeita o temporizador de timout e tentaria constantemente reconectar-se ao WattPilot\nBug corrigido onde o adaptador enviaria uma mensagem de desconexão errada para o WattPilot",
+        "nl": "Bug herstelde waar de adapter de timout timer niet zou respecteren en probeerde constant contact te maken met de WattPilot\nBug heeft gerepareerd waar de adapter een verkeerd afgesloten bericht zou sturen naar de WattPilot",
+        "fr": "Correction de bug où l'adaptateur ne respecterait pas le minuteur de timout et essayerait de se connecter constamment au WattPilot\nBug corrigé où l'adaptateur envoie un mauvais message de déconnexion au WattPilot",
+        "it": "Bug fisso dove l'adattatore non avrebbe rispettato il timer di timout e cercherebbe di ricollegare costantemente al WattPilot\nBug fisso dove l'adattatore invierebbe un messaggio di disconnessione sbagliato al WattPilot",
+        "es": "Error fijo donde el adaptador no respetaría el temporizador de timout y trataría de reconectarse constantemente con el WattPilot\nError fijo donde el adaptador enviaría un mensaje de desconexión equivocado al WattPilot",
+        "pl": "Bug ustał, gdzie adapter nie szanuje czasownika i próbował stale rekonekstować się z WattPilotem\nBug ustał, gdzie adapter wysyła nieodłączną wiadomość do WattPilot",
+        "zh-cn": "如果适应者不尊重受害者时间,将设法与WattPilot公司保持持续的联系\n如果适应者将向WattPilot发出错误的不相容信息,则确定其固定地点。"
+      },
       "3.2.2": {
         "en": "Fixed reconnecting frequency\nFixed multiple Websocket connections\nAdded frequency handler",
         "de": "Feste Wiederverbindungsfrequenz\nMehrfach behoben Websocket-Verbindungen\nZusätzlicher Frequenzgriff",
@@ -74,18 +86,6 @@
         "es": "SebastianHanz solucionó infinita RAM-usage\nañadido una descripción",
         "pl": "SebastianHanz ustabilizował nieskończoną ilość pamięci RAM\ndodać do opisu",
         "zh-cn": "Sebastian Haynz 固定在最后阶段\n附加说明"
-      },
-      "2.2.3": {
-        "en": "SebastianHanz fixed type-conflicts. Thank you!",
-        "de": "SebastianHanz fixierte Typenkonflikte. Danke!",
-        "ru": "SebastianHanz фиксированные тип-конфликты. Спасибо!",
-        "pt": "SebastianHanz fixo tipo-conflitos. Obrigado!",
-        "nl": "SebastianHanz heeft type-conflicten gemaakt. Dank je!",
-        "fr": "SebastianHanz fixe type-conflicts. Merci !",
-        "it": "SebastianHanz ha riparato i conflitti di tipo. Grazie!",
-        "es": "SebastianHanz solucionó conflictos de tipo. ¡Gracias!",
-        "pl": "SebastianHanz stacjonował w typie. Dziękuję!",
-        "zh-cn": "Sebastian Haynz固定类型冲突。 谢!"
       }
     },
     "title": "Fronius Wattpilot",
