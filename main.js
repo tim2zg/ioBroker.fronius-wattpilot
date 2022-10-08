@@ -9,6 +9,7 @@ let counter = 0;
 let sse = undefined;
 let hashedPass = undefined;
 let lastUpdate = Date.now();
+let lastDateWritten = Date.now();
 
 class FroniusWattpilot extends utils.Adapter {
 	/**
@@ -64,7 +65,6 @@ class FroniusWattpilot extends utils.Adapter {
 
 		function createWsConnection() {
 			if (ws !== undefined && ws.readyState === 1) {
-				ws.send("disconnect");
 				ws.close();
 				ws = undefined;
 			}
@@ -78,7 +78,7 @@ class FroniusWattpilot extends utils.Adapter {
 			});
 
 			ws.on("message", async (messageData) => { // Handle on Message event
-
+				lastUpdate = Date.now();
 				try {
 					messageData = JSON.parse(messageData); // Convert Message to JSON
 				} catch (e) {
@@ -118,8 +118,8 @@ class FroniusWattpilot extends utils.Adapter {
 				} else if (messageData["type"] === "authError") { // Handle Auth Error
 					logger.error("Password wrong!");
 				}
-				if (lastUpdate + (1000 * freq) < Date.now()) {
-					lastUpdate = Date.now();
+				if (lastDateWritten + (1000 * freq) < Date.now()) {
+					lastDateWritten = Date.now();
 					handleData(messageData);
 				} // Handle incoming Data
 			});
@@ -548,12 +548,12 @@ class FroniusWattpilot extends utils.Adapter {
 		}
 
 		async function checkUpTime() {
-			//logger.info("checkUpTime");
-			if(((lastUpdate + (freq * 1000)) - Date.now()) <= (2.5 * 60 * 1000)) {
-				//logger.info("checkUpTime: lastUpdate: " + lastUpdate.toLocaleString() + " Date.now(): " + Date.now().toLocaleString());
+			logger.debug("checkUpTime");
+			if ((Date.now() - lastUpdate) > (1000 * 60 * 2.5)) {
+				logger.debug("checkUpTime: lastUpdate: " + lastUpdate.toLocaleString() + " Date.now(): " + Date.now().toLocaleString());
 				// Trying to reconnect
 				logger.info("Try to reconnect... Connection LOST!");
-				adapter.setState("info.connection", true, true);
+				adapter.setState("info.connection", false, true);
 				createWsConnection();
 			}
 		}
