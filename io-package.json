@@ -1,8 +1,20 @@
 {
   "common": {
     "name": "fronius-wattpilot",
-    "version": "3.2.3",
+    "version": "3.2.4",
     "news": {
+      "3.2.4": {
+        "en": "Fiexed cool down timer for normal values",
+        "de": "Fiexed kühlen Timer für Normalwerte",
+        "ru": "Fiexed прохладный таймер для нормальных значений",
+        "pt": "Temporizador de arrefecimento apertado para valores normais",
+        "nl": "Verkoelde klokkenluider voor normale waarden",
+        "fr": "Temporaire frigorifique pour valeurs normales",
+        "it": "Timer di raffreddamento a fessura per valori normali",
+        "es": "Temporizador ajustado para valores normales",
+        "pl": "50 razy chłodził czaszkę dla wartości normalnych",
+        "zh-cn": "正常价值的冷冻时间"
+      },
       "3.2.3": {
         "en": "Bug fixed where the adapter would not respect the timout timer and would try to constantly reconnect to the WattPilot\nBug fixed where the adapter would send a wrong disconnect message to the WattPilot",
         "de": "Fehler behoben, wo der Adapter den Timout-Timer nicht respektieren würde und versuchen würde, ständig wieder mit dem WattPilot zu verbinden\nFehler behoben, wo der Adapter eine falsche Trennmeldung an den WattPilot senden würde",
@@ -74,18 +86,6 @@
         "es": "Actualizado README.md\nEjemplos creados\"-directorio para aplicaciones de muestra\nAñadido algunas traducciones\nRenamed checkbox Parser a algo más intuitivo\nFijación #4: El mapa de Datapoint ahora se crea correctamente\nFijación #5: Los caracteres de contraseña ya no son visibles\nConflicto tipo fijo de cable Tipo",
         "pl": "README.md\nProduktywne przykłady dla aplikacji próbkowych\nDodać niektóre tłumaczenia\nRenamed checkbox Parser do czegoś bardziej intuicyjnego\nFixxa #4: Mapa danych została stworzona poprawnie\nFixxe #5: Nie są już widoczne\nKonflikt typu kabelowego Typ",
         "zh-cn": "更新的中小企业\n抽样申请的举证\n增加一些翻译\n重新命名的检查箱 更多意外困难\n例4:数据点图现在正确地制作\n第5号:护照前导游不再见\n电缆冲突 类型"
-      },
-      "2.2.4": {
-        "en": "SebastianHanz fixed infinite RAM-usage\nadded some description",
-        "de": "SebastianHanz fix unendliche RAM-Nutzung\nbeschreibung",
-        "ru": "SebastianHanz фиксированный бесконечный RAM-usage\nдобавлено описание",
-        "pt": "SebastianHanz fixou a utilização infinita de RAM\nadicionou alguma descrição",
-        "nl": "SebastianHanz heeft oneindige RAM-gebruik\nvoegde een beschrijving toe",
-        "fr": "SebastianHanz fixe infini RAM-usage\najouté une description",
-        "it": "SebastianHanz fisso infinito RAM-usage\naggiunto qualche descrizione",
-        "es": "SebastianHanz solucionó infinita RAM-usage\nañadido una descripción",
-        "pl": "SebastianHanz ustabilizował nieskończoną ilość pamięci RAM\ndodać do opisu",
-        "zh-cn": "Sebastian Haynz 固定在最后阶段\n附加说明"
       }
     },
     "title": "Fronius Wattpilot",

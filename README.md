@@ -76,7 +76,7 @@ Thanks to joscha82 we know: https://github.com/joscha82/wattpilot/blob/main/API.
     Placeholder for the next version (at the beginning of the line):
     ## **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS** 
+### 3.2.4 (2022-10-11) 
 - Fiexed cool down timer for normal values
 
 ### 3.2.3 (2022-10-08)
