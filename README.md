@@ -76,6 +76,9 @@ Thanks to joscha82 we know: https://github.com/joscha82/wattpilot/blob/main/API.
     Placeholder for the next version (at the beginning of the line):
     ## **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS** 
+- Fiexed cool down timer for normal values
+
 ### 3.2.3 (2022-10-08)
 - Bug fixed where the adapter would not respect the timout timer and would try to constantly reconnect to the WattPilot
 - Bug fixed where the adapter would send a wrong disconnect message to the WattPilot
