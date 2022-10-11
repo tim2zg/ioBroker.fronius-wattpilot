@@ -118,6 +118,11 @@ class FroniusWattpilot extends utils.Adapter {
 				} else if (messageData["type"] === "authError") { // Handle Auth Error
 					logger.error("Password wrong!");
 				}
+
+				if (messageData["type"] !== "deltaStatus") { // Handle Data Message
+					handleData(messageData);
+				}
+
 				if (lastDateWritten + (1000 * freq) < Date.now()) {
 					lastDateWritten = Date.now();
 					handleData(messageData);
