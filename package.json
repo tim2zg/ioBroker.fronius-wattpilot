@@ -12,14 +12,15 @@
   "contributors": [
     {
       "name": "tim2zg"
+    },
+    {
+      "name": "SebastianHanz"
     }
   ],
   "homepage": "https://github.com/tim2zg/ioBroker.fronius-wattpilot",
   "license": "MIT",
   "keywords": [
-    "ioBroker",
     "template",
-    "Smart Home",
     "home automation"
   ],
   "repository": {

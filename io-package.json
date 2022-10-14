@@ -114,7 +114,8 @@
       "zh-cn": "fronius-wattpilot"
     },
     "authors": [
-      "tim2zg <tim2zg@protonmail.com>"
+      "tim2zg <tim2zg@protonmail.com>",
+      "SebastianHanz <>"
     ],
     "keywords": [
       "template",
