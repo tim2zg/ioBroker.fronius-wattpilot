@@ -131,7 +131,7 @@
     "readme": "https://github.com/tim2zg/ioBroker.fronius-wattpilot/blob/main/README.md",
     "loglevel": "info",
     "mode": "daemon",
-    "type": "communication",
+    "type": "energy",
     "compact": true,
     "connectionType": "local",
     "dataSource": "poll",
