@@ -57,7 +57,7 @@ class FroniusWattpilot extends utils.Adapter {
 			await createObjectAsync("set_mode", "string", "level", true, true);
 			this.subscribeStates("set_mode");
 
-			await createObjectAsync("set_state", "string", "level", true);
+			await createObjectAsync("set_state", "string", "level", true, true);
 			this.subscribeStates("set_state");
 
 			createWsConnection();
