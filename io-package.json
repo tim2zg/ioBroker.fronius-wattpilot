@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "fronius-wattpilot",
-    "version": "3.3.0",
+    "version": "3.3.1",
     "news": {
+      "3.3.1": {
+        "en": "Fixed a bug where set_state was not writable",
+        "de": "Fehler behoben, bei dem set_state nicht schreibbar war",
+        "ru": "Исправлена ошибка, в которой set_state не был writable",
+        "pt": "Corrigido um bug onde set_state não foi writable",
+        "nl": "Ik heb een insect gerepareerd waar het landgoed niet geschreven was",
+        "fr": "Correction d'un bug où set_state n'était pas écriture",
+        "it": "Corretto un bug in cui set_state non era scrivibile",
+        "es": "Arreglado un error donde set_state no era writable",
+        "pl": "Błękitnym błędem, w którym ustawiono _state, nie był w stanie sfałszować",
+        "uk": "Виправлено помилку, де set_state не був",
+        "zh-cn": "A. 固定的黑色,即国家不可原状。"
+      },
       "3.3.0": {
         "en": "Fixed a bug where the adapter would not set the correct labels for the states\nPerformance improvements\nFixed dependencies",
         "de": "Fehler behoben, bei dem der Adapter die richtigen Etiketten für die Zustände nicht einstellen würde\nLeistungsverbesserungen\nFeste Abhängigkeiten",
@@ -76,18 +89,6 @@
         "es": "Conexión fija al WebSocket\nReestructurado el código",
         "pl": "Fixed ponownie połączył się z WebSocket\nRestrukturyzacja kodu",
         "zh-cn": "B. 固定与网站连接\nA. 守则的结构"
-      },
-      "3.2.0": {
-        "en": "Implemented reconnecting\nShrank code down",
-        "de": "Ergänzende Umschaltung\nShrank code down",
-        "ru": "Реализовано переподключение\nShrank код вниз",
-        "pt": "Reconexão implementada\nCódigo de Shrank para baixo",
-        "nl": "Vertaling:\nShrank code",
-        "fr": "Reconnexion appliquée\nCode de triage",
-        "it": "Ricollegamento attuato\nCodice Shrank",
-        "es": "Reconexión aplicada\nCódigo Shrank abajo",
-        "pl": "Implementacja\nKod Shranka",
-        "zh-cn": "执行重新连接\nHrank守则"
       }
     },
     "title": "Fronius Wattpilot",

@@ -76,7 +76,7 @@ Thanks to joscha82 we know: https://github.com/joscha82/wattpilot/blob/main/API.
     Placeholder for the next version (at the beginning of the line):
     ## **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 3.3.1 (2022-11-17)
 - Fixed a bug where set_state was not writable
 
 ### 3.3.0 (2022-11-17)
