@@ -9,7 +9,6 @@ let counter = 0;
 let sse = undefined;
 let hashedPass = undefined;
 let lastUpdate = Date.now();
-let lastDateWritten = Date.now();
 
 class FroniusWattpilot extends utils.Adapter {
 	/**
@@ -33,6 +32,7 @@ class FroniusWattpilot extends utils.Adapter {
 		const password = this.config.pass;
 		const useNormalParser = this.config.parser;
 		let hostToConnect;
+		const timeout = [];
 		const start = Date.now();
 		const logger = this.log;
 		const freq = this.config.freq;
@@ -88,14 +88,13 @@ class FroniusWattpilot extends utils.Adapter {
 				//logger.info(messageData["type"].toString()); // 4 Debug only
 
 				if (messageData["type"] === "response") {
-					if (useNormalParser) {
-						logger.info("State set"); // Incoming data from set State is OK
+					if (messageData["status"]["amp"] !== undefined) {
+						adapter.setState("set_power", messageData["status"]["amp"], true);
+					} else if (messageData["status"]["lmo"] !== undefined) {
+						adapter.setState("set_mode", messageData["status"]["mode"], true);
 					} else {
-						if (messageData["type"] === true) { // Incoming data from set State is OK
-							adapter.setState("set_state", true, true);
-						}
+						adapter.setState("set_state", true, true);
 					}
-
 				} else if (messageData["type"] === "hello") { // Handle Hello Message
 					sse = messageData["serial"];
 
@@ -117,16 +116,9 @@ class FroniusWattpilot extends utils.Adapter {
 					logger.info("Connected!");
 				} else if (messageData["type"] === "authError") { // Handle Auth Error
 					logger.error("Password wrong!");
-				}
-
-				if (messageData["type"] !== "deltaStatus") { // Handle Data Message
+				} else {
 					handleData(messageData);
 				}
-
-				if (lastDateWritten + (1000 * freq) < Date.now()) {
-					lastDateWritten = Date.now();
-					handleData(messageData);
-				} // Handle incoming Data
 			});
 		}
 
@@ -147,164 +139,279 @@ class FroniusWattpilot extends utils.Adapter {
 				if (createdStates.includes(dataKeyToParse)) {
 					switch (dataKeyToParse) {
 						case "acs":
-							if (data2["status"][dataKeyToParse] === 0) {
-								await adapter.setStateAsync("AccessState", { val: "Open", ack: true });
-							} else if (data2["status"][dataKeyToParse] === 2) {
-								await adapter.setStateAsync("AccessState", { val: "Wait", ack: true });
+							if (timeout["acs"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
+								timeout["acs"] = Date.now();
+								if (data2["status"][dataKeyToParse] === 0) {
+									await adapter.setStateAsync("AccessState", { val: "Open", ack: true });
+								} else if (data2["status"][dataKeyToParse] === 2) {
+									await adapter.setStateAsync("AccessState", { val: "Wait", ack: true });
+								}
 							}
 							break;
 
 						case "cbl":
-							await adapter.setStateAsync("cableType", { val: data2["status"][dataKeyToParse], ack: true });
+							if (timeout["cbl"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
+								timeout["cbl"] = Date.now();
+								await adapter.setStateAsync("cableType", { val: data2["status"][dataKeyToParse], ack: true });
+							}
 							break;
 						case "fhz":
-							await adapter.setStateAsync("frequency", { val: data2["status"][dataKeyToParse], ack: true });
+							if (timeout["fhz"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
+								timeout["fhz"] = Date.now();
+								await adapter.setStateAsync("frequency", { val: data2["status"][dataKeyToParse], ack: true });
+							}
 							break;
 						case "pha":
-							await adapter.setStateAsync("phases", { val: JSON.stringify(data2["status"][dataKeyToParse]), ack: true });
+							if (timeout["pha"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
+								timeout["pha"] = Date.now();
+								await adapter.setStateAsync("phases", {
+									val: JSON.stringify(data2["status"][dataKeyToParse]),
+									ack: true
+								});
+							}
 							break;
 						case "wh":
-							await adapter.setStateAsync("energyCounterSinceStart", { val: data2["status"][dataKeyToParse], ack: true });
+							if (timeout["wh"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
+								timeout["wh"] = Date.now();
+								await adapter.setStateAsync("energyCounterSinceStart", {
+									val: data2["status"][dataKeyToParse],
+									ack: true
+								});
+							}
 							break;
 
 						case "err":
-							switch (data2["status"][dataKeyToParse]) {
-								case 0:
-									await adapter.setStateAsync("errorState", { val: "Unknown Error", ack: true });
-									break;
-								case 1:
-									await adapter.setStateAsync("errorState", { val: "Idle", ack: true });
-									break;
-								case 2:
-									await adapter.setStateAsync("errorState", { val: "Charging", ack: true });
-									break;
-								case 3:
-									await adapter.setStateAsync("errorState", { val: "Wait Car", ack: true });
-									break;
-								case 4:
-									await adapter.setStateAsync("errorState", { val: "Complete", ack: true });
-									break;
-								case 5:
-									await adapter.setStateAsync("errorState", { val: "Error", ack: true });
-									break;
+							if (timeout["err"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
+								timeout["err"] = Date.now();
+								switch (data2["status"][dataKeyToParse]) {
+									case 0:
+										await adapter.setStateAsync("errorState", { val: "Unknown Error", ack: true });
+										break;
+									case 1:
+										await adapter.setStateAsync("errorState", { val: "Idle", ack: true });
+										break;
+									case 2:
+										await adapter.setStateAsync("errorState", { val: "Charging", ack: true });
+										break;
+									case 3:
+										await adapter.setStateAsync("errorState", { val: "Wait Car", ack: true });
+										break;
+									case 4:
+										await adapter.setStateAsync("errorState", { val: "Complete", ack: true });
+										break;
+									case 5:
+										await adapter.setStateAsync("errorState", { val: "Error", ack: true });
+										break;
+								}
 							}
 							break;
 
 						case "ust":
-							switch (data2["status"][dataKeyToParse]) {
-								case 0:
-									await adapter.setStateAsync("cableLock", { val: "Normal", ack: true });
-									break;
-								case 1:
-									await adapter.setStateAsync("cableLock", { val: "AutoUnlock", ack: true });
-									break;
-								case 2:
-									await adapter.setStateAsync("cableLock", { val: "AlwaysLock", ack: true });
-									break;
+							if (timeout["ust"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
+								timeout["ust"] = Date.now();
+
+								switch (data2["status"][dataKeyToParse]) {
+									case 0:
+										await adapter.setStateAsync("cableLock", {val: "Normal", ack: true});
+										break;
+									case 1:
+										await adapter.setStateAsync("cableLock", {val: "AutoUnlock", ack: true});
+										break;
+									case 2:
+										await adapter.setStateAsync("cableLock", {val: "AlwaysLock", ack: true});
+										break;
+								}
 							}
 							break;
 
 						case "eto":
-							await adapter.setStateAsync("energyCounterTotal", { val: data2["status"][dataKeyToParse], ack: true });
+							if (timeout["eto"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
+								timeout["eto"] = Date.now();
+								await adapter.setStateAsync("energyCounterTotal", {
+									val: data2["status"][dataKeyToParse],
+									ack: true
+								});
+							}
 							break;
 						case "cae":
-							await adapter.setStateAsync("cae", { val: data2["status"][dataKeyToParse], ack: true });
+							if (timeout["cae"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
+								timeout["cae"] = Date.now();
+								await adapter.setStateAsync("cae", {val: data2["status"][dataKeyToParse], ack: true});
+							}
 							break;
 						case "cak":
-							await adapter.setStateAsync("cak", { val: data2["status"][dataKeyToParse], ack: true });
+							if (timeout["cak"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
+								timeout["cak"] = Date.now();
+								await adapter.setStateAsync("cak", {val: data2["status"][dataKeyToParse], ack: true});
+							}
 							break;
 						case "lmo":
-							switch (data2["status"][dataKeyToParse]) {
-								case 3:
-									await adapter.setStateAsync("mode", { val: "Default", ack: true });
-									break;
-								case 4:
-									await adapter.setStateAsync("mode", { val: "Eco", ack: true });
-									break;
-								case 5:
-									await adapter.setStateAsync("mode", { val: "Next Trip", ack: true });
-									break;
+							if (timeout["lmo"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
+								timeout["lmo"] = Date.now();
+								switch (data2["status"][dataKeyToParse]) {
+									case 3:
+										await adapter.setStateAsync("mode", {val: "Default", ack: true});
+										break;
+									case 4:
+										await adapter.setStateAsync("mode", {val: "Eco", ack: true});
+										break;
+									case 5:
+										await adapter.setStateAsync("mode", {val: "Next Trip", ack: true});
+										break;
+								}
 							}
 							break;
 
 						case "car":
-							switch (data2["status"][dataKeyToParse]) {
-								case 1:
-									await adapter.setStateAsync("carConnected", { val: "no car", ack: true });
-									break;
-								case 2:
-									await adapter.setStateAsync("carConnected", { val: "charging", ack: true });
-									break;
-								case 3:
-									await adapter.setStateAsync("carConnected", { val: "ready", ack: true });
-									break;
-								case 4:
-									await adapter.setStateAsync("carConnected", { val: "complete", ack: true });
-									break;
+							if (timeout["car"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
+								timeout["car"] = Date.now();
+								switch (data2["status"][dataKeyToParse]) {
+									case 1:
+										await adapter.setStateAsync("carConnected", { val: "no car", ack: true });
+										break;
+									case 2:
+										await adapter.setStateAsync("carConnected", { val: "charging", ack: true });
+										break;
+									case 3:
+										await adapter.setStateAsync("carConnected", { val: "ready", ack: true });
+										break;
+									case 4:
+										await adapter.setStateAsync("carConnected", { val: "complete", ack: true });
+										break;
+								}
 							}
 							break;
 
 						case "alw":
-							if (data2["status"][dataKeyToParse] === 0) {
-								await adapter.setStateAsync("AllowCharging", { val: false, ack: true });
-							} else if (data2["status"][dataKeyToParse] === 1) {
-								await adapter.setStateAsync("AllowCharging", { val: true, ack: true });
+							if (timeout["alw"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
+								timeout["alw"] = Date.now();
+								if (data2["status"][dataKeyToParse] === 0) {
+									await adapter.setStateAsync("AllowCharging", { val: false, ack: true });
+								} else if (data2["status"][dataKeyToParse] === 1) {
+									await adapter.setStateAsync("AllowCharging", { val: true, ack: true });
+								}
 							}
 							break;
 
 						case "nrg":
-							await adapter.setStateAsync("voltage1", { val: data2["status"][dataKeyToParse][0], ack: true });
-							await adapter.setStateAsync("voltage2", { val: data2["status"][dataKeyToParse][1], ack: true });
-							await adapter.setStateAsync("voltage3", { val: data2["status"][dataKeyToParse][2], ack: true });
-							await adapter.setStateAsync("voltageN", { val: data2["status"][dataKeyToParse][3], ack: true });
-							await adapter.setStateAsync("amps1", { val: data2["status"][dataKeyToParse][4], ack: true });
-							await adapter.setStateAsync("amps2", { val: data2["status"][dataKeyToParse][5], ack: true });
-							await adapter.setStateAsync("amps3", { val: data2["status"][dataKeyToParse][6], ack: true });
-							await adapter.setStateAsync("power2", { val: data2["status"][dataKeyToParse][7] * 0.001, ack: true });
-							await adapter.setStateAsync("power2", { val: data2["status"][dataKeyToParse][8] * 0.001, ack: true });
-							await adapter.setStateAsync("power3", { val: data2["status"][dataKeyToParse][9] * 0.001, ack: true });
-							await adapter.setStateAsync("powerN", { val: data2["status"][dataKeyToParse][10] * 0.001, ack: true });
-							await adapter.setStateAsync("power", { val: data2["status"][dataKeyToParse][11] * 0.001, ack: true });
+							if (timeout["nrg"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
+								timeout["nrg"] = Date.now();
+								await adapter.setStateAsync("voltage1", {
+									val: data2["status"][dataKeyToParse][0],
+									ack: true
+								});
+								await adapter.setStateAsync("voltage2", {
+									val: data2["status"][dataKeyToParse][1],
+									ack: true
+								});
+								await adapter.setStateAsync("voltage3", {
+									val: data2["status"][dataKeyToParse][2],
+									ack: true
+								});
+								await adapter.setStateAsync("voltageN", {
+									val: data2["status"][dataKeyToParse][3],
+									ack: true
+								});
+								await adapter.setStateAsync("amps1", {
+									val: data2["status"][dataKeyToParse][4],
+									ack: true
+								});
+								await adapter.setStateAsync("amps2", {
+									val: data2["status"][dataKeyToParse][5],
+									ack: true
+								});
+								await adapter.setStateAsync("amps3", {
+									val: data2["status"][dataKeyToParse][6],
+									ack: true
+								});
+								await adapter.setStateAsync("power2", {
+									val: data2["status"][dataKeyToParse][7] * 0.001,
+									ack: true
+								});
+								await adapter.setStateAsync("power2", {
+									val: data2["status"][dataKeyToParse][8] * 0.001,
+									ack: true
+								});
+								await adapter.setStateAsync("power3", {
+									val: data2["status"][dataKeyToParse][9] * 0.001,
+									ack: true
+								});
+								await adapter.setStateAsync("powerN", {
+									val: data2["status"][dataKeyToParse][10] * 0.001,
+									ack: true
+								});
+								await adapter.setStateAsync("power", {
+									val: data2["status"][dataKeyToParse][11] * 0.001,
+									ack: true
+								});
+							}
 							break;
 
 						case "amp":
-							await adapter.setStateAsync("amp", { val: data2["status"][dataKeyToParse], ack: true });
+							if (timeout["amp"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
+								timeout["amp"] = Date.now();
+								await adapter.setStateAsync("amp", { val: data2["status"][dataKeyToParse], ack: true });
+							}
 							break;
 						case "version":
-							await adapter.setStateAsync("version", { val: data2["status"][dataKeyToParse], ack: true });
+							if (timeout["version"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
+								timeout["version"] = Date.now();
+								await adapter.setStateAsync("version", { val: data2["status"][dataKeyToParse], ack: true });
+							}
 							break;
 						case "fwv":
-							await adapter.setStateAsync("firmware", { val: data2["status"][dataKeyToParse], ack: true });
+							if (timeout["fwv"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
+								timeout["fwv"] = Date.now();
+								await adapter.setStateAsync("firmware", { val: data2["status"][dataKeyToParse], ack: true });
+							}
 							break;
 						case "wss":
-							await adapter.setStateAsync("WifiSSID", { val: data2["status"][dataKeyToParse], ack: true });
+							if (timeout["wss"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
+								timeout["wss"] = Date.now();
+								await adapter.setStateAsync("WifiSSID", { val: data2["status"][dataKeyToParse], ack: true });
+							}
 							break;
 
 						case "upd":
-							if (data2["status"][dataKeyToParse] === "0") {
-								await adapter.setStateAsync("updateAvailable", { val: false, ack: true });
-							} else {
-								await adapter.setStateAsync("updateAvailable", { val: true, ack: true });
-
+							if (timeout["upd"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
+								timeout["upd"] = Date.now();
+								if (data2["status"][dataKeyToParse] === "0") {
+									await adapter.setStateAsync("updateAvailable", { val: false, ack: true });
+								} else {
+									await adapter.setStateAsync("updateAvailable", { val: true, ack: true });
+								}
 							}
 							break;
 
 						case "fna":
-							await adapter.setStateAsync("hostname", { val: data2["status"][dataKeyToParse], ack: true });
+							if (timeout["fna"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
+								timeout["fna"] = Date.now();
+								await adapter.setStateAsync("hostname", { val: data2["status"][dataKeyToParse], ack: true });
+							}
 							break;
 						case "ffna":
-							await adapter.setStateAsync("serial", { val: data2["status"][dataKeyToParse], ack: true });
+							if (timeout["ffna"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
+								timeout["ffna"] = Date.now();
+								await adapter.setStateAsync("serial", { val: data2["status"][dataKeyToParse], ack: true });
+							}
 							break;
 						case "utc":
-							await adapter.setStateAsync("TimeStamp", { val: data2["status"][dataKeyToParse], ack: true });
+							if (timeout["utc"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
+								timeout["utc"] = Date.now();
+								await adapter.setStateAsync("TimeStamp", { val: data2["status"][dataKeyToParse], ack: true });
+							}
 							break;
 						case "pvopt_averagePGrid":
-							await adapter.setStateAsync("PVUselessPower", { val: data2["status"][dataKeyToParse], ack: true });
+							if (timeout["pvopt_averagePGrid"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
+								timeout["pvopt_averagePGrid"] = Date.now();
+								await adapter.setStateAsync("PVUselessPower", { val: data2["status"][dataKeyToParse], ack: true });
+							}
 							break;
 					}
 				} else {
 					switch (dataKeyToParse) {
 						case "acs":
+							timeout["acs"] = Date.now();
 							await createObjectAsync("AccessState", "value", "string");
 							createdStates.push("acs");
 
@@ -316,30 +423,35 @@ class FroniusWattpilot extends utils.Adapter {
 							break;
 
 						case "cbl":
+							timeout["cbl"] = Date.now();
 							await createObjectAsync("cableType", "value", "number");
 							createdStates.push("cbl");
 							await adapter.setStateAsync("cableType", { val: data2["status"][dataKeyToParse], ack: true });
 							break;
 
 						case "fhz":
+							timeout["fhz"] = Date.now();
 							await createObjectAsync("frequency", "value", "number");
 							createdStates.push("fhz");
 							await adapter.setStateAsync("frequency", { val: data2["status"][dataKeyToParse], ack: true });
 							break;
 
 						case "pha":
+							timeout["pha"] = Date.now();
 							await createObjectAsync("phases", "value", "string");
 							createdStates.push("pha");
 							await adapter.setStateAsync("phases", { val: JSON.stringify(data2["status"][dataKeyToParse]), ack: true });
 							break;
 
 						case "wh":
+							timeout["wh"] = Date.now();
 							await createObjectAsync("energyCounterSinceStart", "value", "number");
 							createdStates.push("wh");
 							await adapter.setStateAsync("energyCounterSinceStart", { val: data2["status"][dataKeyToParse], ack: true });
 							break;
 
 						case "err":
+							timeout["err"] = Date.now();
 							await createObjectAsync("errorState", "value", "string");
 							createdStates.push("err");
 
@@ -366,6 +478,7 @@ class FroniusWattpilot extends utils.Adapter {
 							break;
 
 						case "ust":
+							timeout["ust"] = Date.now();
 							await createObjectAsync("cableLock", "value", "string");
 							createdStates.push("ust");
 
@@ -383,24 +496,28 @@ class FroniusWattpilot extends utils.Adapter {
 							break;
 
 						case "eto":
+							timeout["eto"] = Date.now();
 							await createObjectAsync("energyCounterTotal", "value", "number");
 							createdStates.push("eto");
 							await adapter.setStateAsync("energyCounterTotal", { val: data2["status"][dataKeyToParse], ack: true });
 							break;
 
 						case "cae":
+							timeout["cae"] = Date.now();
 							await createObjectAsync("cae", "value", "boolean");
 							createdStates.push("cae");
 							await adapter.setStateAsync("cae", { val: data2["status"][dataKeyToParse], ack: true });
 							break;
 
 						case "cak":
+							timeout["cak"] = Date.now();
 							await createObjectAsync("cak", "value", "string");
 							createdStates.push("cak");
 							await adapter.setStateAsync("cak", { val: data2["status"][dataKeyToParse], ack: true });
 							break;
 
 						case "lmo":
+							timeout["lmo"] = Date.now();
 							await createObjectAsync("mode", "value", "string");
 							createdStates.push("lmo");
 
@@ -418,6 +535,7 @@ class FroniusWattpilot extends utils.Adapter {
 							break;
 
 						case "car":
+							timeout["car"] = Date.now();
 							await createObjectAsync("carConnected", "value", "string");
 							createdStates.push("car");
 
@@ -438,6 +556,7 @@ class FroniusWattpilot extends utils.Adapter {
 							break;
 
 						case "alw":
+							timeout["alw"] = Date.now();
 							await createObjectAsync("AllowCharging", "value", "boolean");
 							createdStates.push("alw");
 
@@ -449,6 +568,7 @@ class FroniusWattpilot extends utils.Adapter {
 							break;
 
 						case "nrg":
+							timeout["nrg"] = Date.now();
 							createdStates.push("nrg");
 							await createObjectAsync("voltage1", "value", "number");
 							await adapter.setStateAsync("voltage1", { val: data2["status"][dataKeyToParse][0], ack: true });
@@ -488,30 +608,35 @@ class FroniusWattpilot extends utils.Adapter {
 							break;
 
 						case "amp":
+							timeout["amp"] = Date.now();
 							await createObjectAsync("amps", "value", "number");
 							await createObjectAsync("amp", "value", "number");
 							await adapter.setStateAsync("amp", { val: data2["status"][dataKeyToParse], ack: true });
 							break;
 
 						case "version":
+							timeout["version"] = Date.now();
 							await createObjectAsync("version", "value", "string");
 							createdStates.push("version");
 							await adapter.setStateAsync("version", { val: data2["status"][dataKeyToParse], ack: true });
 							break;
 
 						case "fwv":
+							timeout["fwv"] = Date.now();
 							await createObjectAsync("firmware", "value", "string");
 							createdStates.push("fwv");
 							await adapter.setStateAsync("firmware", { val: data2["status"][dataKeyToParse], ack: true });
 							break;
 
 						case "wss":
+							timeout["wss"] = Date.now();
 							await createObjectAsync("WifiSSID", "value", "string");
 							createdStates.push("wss");
 							await adapter.setStateAsync("WifiSSID", { val: data2["status"][dataKeyToParse], ack: true });
 							break;
 
 						case "upd":
+							timeout["upd"] = Date.now();
 							await createObjectAsync("updateAvailable", "value", "boolean");
 							createdStates.push("upd");
 
@@ -524,24 +649,28 @@ class FroniusWattpilot extends utils.Adapter {
 							break;
 
 						case "fna":
+							timeout["fna"] = Date.now();
 							await createObjectAsync("hostname", "value", "string");
 							createdStates.push("fna");
 							await adapter.setStateAsync("hostname", { val: data2["status"][dataKeyToParse], ack: true });
 							break;
 
 						case "ffna":
+							timeout["ffna"] = Date.now();
 							await createObjectAsync("serial", "value", "string");
 							createdStates.push("ffna");
 							await adapter.setStateAsync("serial", { val: data2["status"][dataKeyToParse], ack: true });
 							break;
 
 						case "utc":
+							timeout["utc"] = Date.now();
 							await createObjectAsync("TimeStamp", "value", "string");
 							createdStates.push("utc");
 							await adapter.setStateAsync("TimeStamp", { val: data2["status"][dataKeyToParse], ack: true });
 							break;
 
 						case "pvopt_averagePGrid":
+							timeout["pvopt_averagePGrid"] = Date.now();
 							await createObjectAsync("PVUselessPower", "value", "number");
 							createdStates.push("pvopt_averagePGrid");
 							await adapter.setStateAsync("PVUselessPower", { val: data2["status"][dataKeyToParse], ack: true });
@@ -569,12 +698,16 @@ class FroniusWattpilot extends utils.Adapter {
 				const keysToCreate = dataToParse.toString();
 
 				if (createdStates.includes(keysToCreate)) {
+					if (timeout[keysToCreate] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
+						timeout[keysToCreate] = Date.now();
+					}
 					if (keysToCreate === "map") {
 						await adapter.setStateAsync(keysToCreate, { val: JSON.stringify(dataToParse2["status"][keysToCreate]), ack: true });
 					} else {
 						await adapter.setStateAsync(keysToCreate, { val: dataToParse2["status"][keysToCreate], ack: true });
 					}
 				} else {
+					timeout[keysToCreate] = Date.now();
 					const dataJSON = JSON.stringify(dataToParse2["status"][keysToCreate]);
 					// @ts-ignore
 					if (!isNaN(dataJSON)) {
@@ -664,14 +797,16 @@ class FroniusWattpilot extends utils.Adapter {
 					}
 				} else if (id.includes("set_power")) {
 					counter = counter + 1;
-					const sendData = { "type": "setValue", "requestId": counter, "key": "amp", "value": state.val };
-					const tf = createHmac("sha256", hashedPass).update(JSON.stringify(sendData)).digest("hex");
-					const sendDataToSource = { "type": "securedMsg", "data": JSON.stringify(sendData), "requestId": counter.toString() + "sm", "hmac": tf.toString() };
+					// @ts-ignore
+					const json = { "type": "setValue", "requestId": counter, "key": "amp", "value": parseInt(state.val)};
+					const tf = createHmac("sha256", hashedPass).update(JSON.stringify(json)).digest("hex");
+					const sendDataToSource = { "type": "securedMsg", "data": JSON.stringify(json), "requestId": counter.toString() + "sm", "hmac": tf.toString() };
 					ws.send(JSON.stringify(sendDataToSource));
 
 				} else if (id.includes("set_mode")) {
 					counter = counter + 1;
-					const sendData = { "type": "setValue", "requestId": counter, "key": "lmo", "value": state.val };
+					// @ts-ignore
+					const sendData = { "type": "setValue", "requestId": counter, "key": "lmo", "value": parseInt(state.val) };
 					const tf = createHmac("sha256", hashedPass).update(JSON.stringify(sendData)).digest("hex");
 					const sendDataToSource = { "type": "securedMsg", "data": JSON.stringify(sendData), "requestId": counter.toString() + "sm", "hmac": tf.toString() };
 					ws.send(JSON.stringify(sendDataToSource));
