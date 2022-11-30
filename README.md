@@ -76,7 +76,7 @@ Thanks to joscha82 we know: https://github.com/joscha82/wattpilot/blob/main/API.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 4.0.0 (2022-11-30)
 - Fixed timing issue 
 - Added set_power and set_mode states
 

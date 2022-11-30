@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "fronius-wattpilot",
-    "version": "3.3.1",
+    "version": "4.0.0",
     "news": {
+      "4.0.0": {
+        "en": "Fixed timing issue \nAdded set_power and set_mode states",
+        "de": "Fixes Timing Problem\nHinzugefügt set_power und set_mode",
+        "ru": "Исправлена проблема времени\nДобавлено set_power и set_mode состояния",
+        "pt": "Problema de tempo fixo\nAdicionado set_power e set_mode estados",
+        "nl": "Quality over Quantity (QoQ) Releases Vertaling:\nGevoegd in de set en zet de staat klaar",
+        "fr": "Problème de calendrier fixe\nAjout de set_power et set_mode states",
+        "it": "Emissione di tempi fissi\nAggiunto set_power e set_mode stati",
+        "es": "Cuestión de tiempo fijo\nAñadido set_power and set_mode states",
+        "pl": "Śmiały problem\nAdded set_power and set_mod states (ang.)",
+        "uk": "Фіксований термін дії\nДодано set_power і set_mode штати",
+        "zh-cn": "固定时间问题\n增 编"
+      },
       "3.3.1": {
         "en": "Fixed a bug where set_state was not writable",
         "de": "Fehler behoben, bei dem set_state nicht schreibbar war",
@@ -77,18 +90,6 @@
         "es": "Frecuencia de reconexión fija\nMúltiples fijos Conexiones Websocket\nControlador de frecuencia",
         "pl": "Fixed reconnection częstotliwości\nFixed multiple połączenia internetowe\nAdded częstotliwość",
         "zh-cn": "固定的频率重新连接\n混合多种 网站链接\n增加频率"
-      },
-      "3.2.1": {
-        "en": "Fixed reconnecting to the WebSocket\nRestructured the code",
-        "de": "Reconnecting mit dem WebSocket behoben\nDen Code umstrukturieren",
-        "ru": "Исправлено переподключение к WebSocket\nПерестроен код",
-        "pt": "Reconexão fixa ao WebSocket\nReestruturação do código",
-        "nl": "Vertaling:\nHerstructureerde de code",
-        "fr": "Reconnecté fixe au WebSocket\nRestructurée du code",
-        "it": "Ricollegamento fisso al WebSocket\nRistrutturato il codice",
-        "es": "Conexión fija al WebSocket\nReestructurado el código",
-        "pl": "Fixed ponownie połączył się z WebSocket\nRestrukturyzacja kodu",
-        "zh-cn": "B. 固定与网站连接\nA. 守则的结构"
       }
     },
     "title": "Fronius Wattpilot",
