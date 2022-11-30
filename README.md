@@ -74,8 +74,12 @@ Thanks to joscha82 we know: https://github.com/joscha82/wattpilot/blob/main/API.
 ### Changelog
 <!--
     Placeholder for the next version (at the beginning of the line):
-    ## **WORK IN PROGRESS**
+    ### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+- Fixed timing issue 
+- Added set_power and set_mode states
+
 ### 3.3.1 (2022-11-17)
 - Fixed a bug where set_state was not writable
 
