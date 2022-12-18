@@ -36,6 +36,10 @@ class FroniusWattpilot extends utils.Adapter {
 		const start = Date.now();
 		const logger = this.log;
 		const freq = this.config.freq;
+		
+		const addParam = this.config.addparm;
+		var arrParm = [];
+		if(addParam != '') arrParm = addParam.split(",");
 
 		this.connectionUpTimeMonitor = setInterval(checkUpTime, 1000 * 60 * 2.5);
 
@@ -678,6 +682,10 @@ class FroniusWattpilot extends utils.Adapter {
 					}
 				}
 			}
+
+			if(arrParm.length > 0){
+				dynamicParser(data2, true);	
+			}
 		}
 
 		async function checkUpTime() {
@@ -691,10 +699,19 @@ class FroniusWattpilot extends utils.Adapter {
 			}
 		}
 
-		async function dynamicParser(dataToParse) {
+		async function dynamicParser(dataToParse, onlyAdditional) {
 			const dataToParse2 = dataToParse;
 
 			for (dataToParse in dataToParse["status"]) {
+
+				if(onlyAdditional){
+					if(arrParm.indexOf(dataToParse.toString()) == -1){
+						continue;
+					} 
+				} else {
+					createdStates.length = 0; // Empty array to prevent infinite RAM-usage
+				}
+
 				const keysToCreate = dataToParse.toString();
 
 				if (createdStates.includes(keysToCreate)) {

@@ -152,7 +152,8 @@
     "freq": 1,
     "serial-number": "XXXXXXXX",
     "parser": true,
-    "cloud": false
+      "cloud": false,
+      "addparm": "aaa"
   },
   "objects": [],
   "protectedNative": [
