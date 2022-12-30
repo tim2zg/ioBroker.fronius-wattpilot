@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "fronius-wattpilot",
-    "version": "4.0.0",
+    "version": "4.1.0",
     "news": {
+      "4.1.0": {
+        "en": "Added the possibility to add states manually via the instance-settings\nFixed the bug where the adapter didn't set the correct value types\nAdded some quality of life improvements",
+        "de": "Hinzufügen der Möglichkeit, Zustände manuell über die Instanzeinstellungen hinzuzufügen\nFehler behoben, bei dem der Adapter die richtigen Wertetypen nicht eingestellt hat\nHinzugefügt einige Qualität der Lebensverbesserungen",
+        "ru": "Добавлена возможность добавления штатов вручную через инструкцию\nИсправлена ошибка, где адаптер не установил правильные типы значения\nДобавлены некоторые улучшения качества жизни",
+        "pt": "Adicionado a possibilidade de adicionar estados manualmente através das configurações de instância\nCorrigido o bug onde o adaptador não definiu os tipos de valor corretos\nAdicionado alguns qualidade de melhorias de vida",
+        "nl": "Voeg de mogelijkheid toe om de staat handmatig toe te voegen via de instance-setting\nDe insect waar de adapter de juiste waardestypes niet plaatste\nVoegde een aantal levensverbeteringen toe",
+        "fr": "Ajout de la possibilité d'ajouter manuellement des états via les paramètres d'instance\nCorrection du bug où l'adaptateur n'a pas défini les types de valeur correctes\nAjout de quelques améliorations de qualité de vie",
+        "it": "Aggiunta la possibilità di aggiungere gli stati manualmente tramite le impostazioni delle istanze\nRisolto il bug in cui l'adattatore non ha impostato i tipi di valore corretti\nAggiunto alcune qualità di vita miglioramenti",
+        "es": "Agregó la posibilidad de añadir estados manualmente a través de los puntos de instancia\nArregla el fallo donde el adaptador no fijó los tipos de valor correctos\nAñadido cierta calidad de las mejoras de la vida",
+        "pl": "Dodać możliwość dodania stanów ręcznie poprzez ustawienie instancji\nBłękitne błędy, w których adapter nie ustawił prawidłowych typów wartości\nDostarczanie pewnej jakości życia",
+        "uk": "Додана можливість додавати стани вручну за допомогою параметра\nВиправлено помилку, де перехідник не встановлює правильне значення\nДодана якість поліпшення життя",
+        "zh-cn": "增加通过制定示范办法故意增加国家的可能性\n确定适应者确定的正确价值类型\n提高生活质量"
+      },
       "4.0.0": {
         "en": "Fixed timing issue \nAdded set_power and set_mode states",
         "de": "Fixes Timing Problem\nHinzugefügt set_power und set_mode",
@@ -78,18 +91,6 @@
         "es": "Error fijo donde el adaptador no respetaría el temporizador de timout y trataría de reconectarse constantemente con el WattPilot\nError fijo donde el adaptador enviaría un mensaje de desconexión equivocado al WattPilot",
         "pl": "Bug ustał, gdzie adapter nie szanuje czasownika i próbował stale rekonekstować się z WattPilotem\nBug ustał, gdzie adapter wysyła nieodłączną wiadomość do WattPilot",
         "zh-cn": "如果适应者不尊重受害者时间,将设法与WattPilot公司保持持续的联系\n如果适应者将向WattPilot发出错误的不相容信息,则确定其固定地点。"
-      },
-      "3.2.2": {
-        "en": "Fixed reconnecting frequency\nFixed multiple Websocket connections\nAdded frequency handler",
-        "de": "Feste Wiederverbindungsfrequenz\nMehrfach behoben Websocket-Verbindungen\nZusätzlicher Frequenzgriff",
-        "ru": "Исправлена переподключение частоты\nИсправлено несколько Websocket соединения\nДобавлен частотный обработчик",
-        "pt": "Frequência de reconectação fixa\nCorrigido vários Conexões Websocket\nManipulador de frequência adicionado",
-        "nl": "Vertaling:\nVertaling: Websocket connecties\nFrequentiehandelaar",
-        "fr": "Fréquence de reconnectage fixe\nCorrection multiple Connexions Websocket\nAjout du gestionnaire de fréquences",
-        "it": "Frequenza di ricollegamento fissa\nRisolto multiplo Collegamenti web\nManigliere di frequenza aggiunto",
-        "es": "Frecuencia de reconexión fija\nMúltiples fijos Conexiones Websocket\nControlador de frecuencia",
-        "pl": "Fixed reconnection częstotliwości\nFixed multiple połączenia internetowe\nAdded częstotliwość",
-        "zh-cn": "固定的频率重新连接\n混合多种 网站链接\n增加频率"
       }
     },
     "title": "Fronius Wattpilot",
