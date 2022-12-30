@@ -76,6 +76,11 @@ Thanks to joscha82 we know: https://github.com/joscha82/wattpilot/blob/main/API.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+- Added the possibility to add states manually via the instance-settings
+- Fixed the bug where the adapter didn't set the correct value types
+- Added some quality of life improvements
+
 ### 4.0.0 (2022-11-30)
 - Fixed timing issue 
 - Added set_power and set_mode states
