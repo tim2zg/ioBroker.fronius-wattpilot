@@ -119,7 +119,8 @@
     },
     "authors": [
       "tim2zg <tim2zg@protonmail.com>",
-      "SebastianHanz <>"
+      "SebastianHanz <>",
+      "derHaubi <>"
     ],
     "keywords": [
       "template",
@@ -147,12 +148,13 @@
     ]
   },
   "native": {
-    "ip-host": "ip-host",
-    "pass": "pass",
+    "ip-host": "IP-Address des WattPilot",
+    "pass": "Password",
     "freq": 1,
     "serial-number": "XXXXXXXX",
     "parser": true,
-    "cloud": false
+    "cloud": false,
+    "addParam": ""
   },
   "objects": [],
   "protectedNative": [

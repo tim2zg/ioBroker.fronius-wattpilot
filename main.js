@@ -37,7 +37,11 @@ class FroniusWattpilot extends utils.Adapter {
 		const logger = this.log;
 		const freq = this.config.freq;
 
-		this.connectionUpTimeMonitor = setInterval(checkUpTime, 1000 * 60 * 2.5);
+		const addParam = this.config.addParam;
+		let arrParam = [];
+		if (addParam !== "") {
+			arrParam = addParam.split(";");
+		}
 
 		if (this.config["cloud"]) {
 			hostToConnect = "ws://app.wattpilot.io/app/" + this.config["serial-number"] + "?version=1.2.9";
@@ -48,17 +52,19 @@ class FroniusWattpilot extends utils.Adapter {
 		this.setState("info.connection", false, true);
 		logger.info("Try to connect to: " + hostToConnect);
 
-		if (hostToConnect === undefined || password === undefined || password === "pass" || hostToConnect === "ws://ip-host/ws" || hostToConnect === "wss://app.wattpilot.io/app/XXXXXXXX?version=1.2.9") {
+		if (hostToConnect === undefined || password === undefined || password === "Password" || hostToConnect === "ws://IP-Address des WattPilot/ws" || hostToConnect === "wss://app.wattpilot.io/app/XXXXXXXX?version=1.2.9") {
 			logger.error("Please use a valid host and password");
 		} else {
-			await createObjectAsync("set_power", "number", "level", true, true);
+			await createObjectAsync("set_power", "number", "number", true, true);
 			this.subscribeStates("set_power");
 
-			await createObjectAsync("set_mode", "string", "level", true, true);
+			await createObjectAsync("set_mode", "string", "number", true, true);
 			this.subscribeStates("set_mode");
 
 			await createObjectAsync("set_state", "string", "string", true, true);
 			this.subscribeStates("set_state");
+
+			this.connectionUpTimeMonitor = setInterval(checkUpTime, 1000 * 60 * 2.5);
 
 			createWsConnection();
 		}
@@ -85,7 +91,6 @@ class FroniusWattpilot extends utils.Adapter {
 					logger.error("Error on parsing JSON: " + e + " " + messageData);
 					logger.error("Pleas check your Pilot!");
 				}
-				//logger.info(messageData["type"].toString()); // 4 Debug only
 
 				if (messageData["type"] === "response") {
 					if (messageData["status"]["amp"] !== undefined) {
@@ -122,7 +127,6 @@ class FroniusWattpilot extends utils.Adapter {
 			});
 		}
 
-
 		function handleData(dataToHandle) {
 			if (useNormalParser) {
 				strictParser(dataToHandle);
@@ -130,7 +134,6 @@ class FroniusWattpilot extends utils.Adapter {
 				dynamicParser(dataToHandle);
 			}
 		}
-
 
 		async function strictParser(dataToParse) {
 			const data2 = dataToParse;
@@ -155,12 +158,14 @@ class FroniusWattpilot extends utils.Adapter {
 								await adapter.setStateAsync("cableType", { val: data2["status"][dataKeyToParse], ack: true });
 							}
 							break;
+
 						case "fhz":
 							if (timeout["fhz"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
 								timeout["fhz"] = Date.now();
 								await adapter.setStateAsync("frequency", { val: data2["status"][dataKeyToParse], ack: true });
 							}
 							break;
+
 						case "pha":
 							if (timeout["pha"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
 								timeout["pha"] = Date.now();
@@ -170,6 +175,7 @@ class FroniusWattpilot extends utils.Adapter {
 								});
 							}
 							break;
+
 						case "wh":
 							if (timeout["wh"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
 								timeout["wh"] = Date.now();
@@ -233,18 +239,21 @@ class FroniusWattpilot extends utils.Adapter {
 								});
 							}
 							break;
+
 						case "cae":
 							if (timeout["cae"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
 								timeout["cae"] = Date.now();
 								await adapter.setStateAsync("cae", {val: data2["status"][dataKeyToParse], ack: true});
 							}
 							break;
+
 						case "cak":
 							if (timeout["cak"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
 								timeout["cak"] = Date.now();
 								await adapter.setStateAsync("cak", {val: data2["status"][dataKeyToParse], ack: true});
 							}
 							break;
+
 						case "lmo":
 							if (timeout["lmo"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
 								timeout["lmo"] = Date.now();
@@ -353,18 +362,21 @@ class FroniusWattpilot extends utils.Adapter {
 								await adapter.setStateAsync("amp", { val: data2["status"][dataKeyToParse], ack: true });
 							}
 							break;
+
 						case "version":
 							if (timeout["version"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
 								timeout["version"] = Date.now();
 								await adapter.setStateAsync("version", { val: data2["status"][dataKeyToParse], ack: true });
 							}
 							break;
+
 						case "fwv":
 							if (timeout["fwv"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
 								timeout["fwv"] = Date.now();
 								await adapter.setStateAsync("firmware", { val: data2["status"][dataKeyToParse], ack: true });
 							}
 							break;
+
 						case "wss":
 							if (timeout["wss"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
 								timeout["wss"] = Date.now();
@@ -389,24 +401,31 @@ class FroniusWattpilot extends utils.Adapter {
 								await adapter.setStateAsync("hostname", { val: data2["status"][dataKeyToParse], ack: true });
 							}
 							break;
+
 						case "ffna":
 							if (timeout["ffna"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
 								timeout["ffna"] = Date.now();
 								await adapter.setStateAsync("serial", { val: data2["status"][dataKeyToParse], ack: true });
 							}
 							break;
+
 						case "utc":
 							if (timeout["utc"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
 								timeout["utc"] = Date.now();
 								await adapter.setStateAsync("TimeStamp", { val: data2["status"][dataKeyToParse], ack: true });
 							}
 							break;
+
 						case "pvopt_averagePGrid":
 							if (timeout["pvopt_averagePGrid"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
 								timeout["pvopt_averagePGrid"] = Date.now();
 								await adapter.setStateAsync("PVUselessPower", { val: data2["status"][dataKeyToParse], ack: true });
 							}
 							break;
+							// No State to parse found for this key, check if user wants this state
+						default:
+							await checkCustomAddedParameters(data2["status"][dataKeyToParse], dataKeyToParse);
+
 					}
 				} else {
 					switch (dataKeyToParse) {
@@ -675,6 +694,52 @@ class FroniusWattpilot extends utils.Adapter {
 							createdStates.push("pvopt_averagePGrid");
 							await adapter.setStateAsync("PVUselessPower", { val: data2["status"][dataKeyToParse], ack: true });
 							break;
+
+							// No data-key found,
+						default:
+							await checkCustomAddedParameters(dataKeyToParse, data2["status"][dataKeyToParse]);
+					}
+				}
+			}
+		}
+
+		async function checkCustomAddedParameters(key, data2) {
+			if (arrParam.length > 0) {
+				if (arrParam.includes(key)) {
+					if (key != null && data2 != null) {
+						if (createdStates.includes(key)) {
+							if (timeout[key] + (1000 * freq) < Date.now()) {
+								timeout[key] = Date.now();
+								if (data2.toString().includes(",")) {
+									await adapter.setStateAsync(key, { val: JSON.stringify(data2).toString(), ack: true });
+								} else {
+									await adapter.setStateAsync(key, { val: data2, ack: true });
+								}
+							}
+						} else {
+							timeout[key] = Date.now();
+							const dataJSON = JSON.stringify(data2);
+							// @ts-ignore
+							if (!isNaN(dataJSON)) {
+								await createObjectAsync(key, "value", "number");
+							} else if (dataJSON.toLowerCase() === "true" || dataJSON.toLowerCase() === "false") {
+								await createObjectAsync(key,  "value", "boolean");
+							} else if (dataJSON.includes("[")) {
+								await createObjectAsync(key, "value", "object");
+							} else {
+								if (key === "rcd") {
+									await createObjectAsync(key, "value", "number");
+								} else {
+									await createObjectAsync(key, "value", "string");
+								}
+							}
+							if (dataJSON.includes(",")) {
+								await adapter.setStateAsync(key, { val: dataJSON.toString(), ack: true });
+							} else {
+								await adapter.setStateAsync(key, { val: data2, ack: true });
+							}
+							createdStates.push(key.toString());
+						}
 					}
 				}
 			}
@@ -696,15 +761,14 @@ class FroniusWattpilot extends utils.Adapter {
 
 			for (dataToParse in dataToParse["status"]) {
 				const keysToCreate = dataToParse.toString();
-
 				if (createdStates.includes(keysToCreate)) {
 					if (timeout[keysToCreate] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
 						timeout[keysToCreate] = Date.now();
-					}
-					if (keysToCreate === "map") {
-						await adapter.setStateAsync(keysToCreate, { val: JSON.stringify(dataToParse2["status"][keysToCreate]), ack: true });
-					} else {
-						await adapter.setStateAsync(keysToCreate, { val: dataToParse2["status"][keysToCreate], ack: true });
+						if (dataToParse2["status"][keysToCreate].toString().includes(",") || dataToParse2["status"][keysToCreate].toString().includes("[") || dataToParse2["status"][keysToCreate].toString().includes("{")) {
+							await adapter.setStateAsync(keysToCreate, { val: JSON.stringify(dataToParse2["status"][keysToCreate]).toString(), ack: true });
+						} else {
+							await adapter.setStateAsync(keysToCreate, { val: dataToParse2["status"][keysToCreate], ack: true });
+						}
 					}
 				} else {
 					timeout[keysToCreate] = Date.now();
@@ -712,13 +776,10 @@ class FroniusWattpilot extends utils.Adapter {
 					// @ts-ignore
 					if (!isNaN(dataJSON)) {
 						await createObjectAsync(keysToCreate, "value", "number");
-
 					} else if (dataJSON.toLowerCase() === "true" || dataJSON.toLowerCase() === "false") {
 						await createObjectAsync(keysToCreate,  "value", "boolean");
-
 					} else if (dataJSON.includes("[")) {
 						await createObjectAsync(keysToCreate, "value", "object");
-
 					} else {
 						if (keysToCreate === "rcd") {
 							await createObjectAsync(keysToCreate, "value", "number");
@@ -726,8 +787,8 @@ class FroniusWattpilot extends utils.Adapter {
 							await createObjectAsync(keysToCreate, "value", "string");
 						}
 					}
-					if (dataJSON.includes("[") || dataJSON.includes("{")) {
-						await adapter.setStateAsync(keysToCreate, { val: dataJSON, ack: true });
+					if (dataJSON.includes(",") || dataJSON.includes("[") || dataJSON.includes("{")) {
+						await adapter.setStateAsync(keysToCreate, { val: dataJSON.toString(), ack: true });
 					} else {
 						await adapter.setStateAsync(keysToCreate, { val: dataToParse2["status"][keysToCreate], ack: true });
 					}
@@ -745,6 +806,7 @@ class FroniusWattpilot extends utils.Adapter {
 	onUnload(callback) {
 		try {
 			ws.close();
+			ws.disconnect();
 			ws = null;
 			clearInterval(this.connectionUpTimeMonitor);
 			adapter.setState("info.connection", false, true);
