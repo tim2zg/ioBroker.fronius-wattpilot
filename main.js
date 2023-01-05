@@ -768,10 +768,12 @@ class FroniusWattpilot extends utils.Adapter {
 				if (createdStates.includes(keysToCreate)) {
 					if (timeout[keysToCreate] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
 						timeout[keysToCreate] = Date.now();
-						if (dataToParse2["status"][keysToCreate].toString().includes(",") || dataToParse2["status"][keysToCreate].toString().includes("[") || dataToParse2["status"][keysToCreate].toString().includes("{")) {
-							await adapter.setStateAsync(keysToCreate, { val: JSON.stringify(dataToParse2["status"][keysToCreate]).toString(), ack: true });
-						} else {
-							await adapter.setStateAsync(keysToCreate, { val: dataToParse2["status"][keysToCreate], ack: true });
+						if (dataToParse2["status"][keysToCreate] !== null) {
+							if (dataToParse2["status"][keysToCreate].toString().includes(",") || dataToParse2["status"][keysToCreate].toString().includes("[") || dataToParse2["status"][keysToCreate].toString().includes("{")) {
+								await adapter.setStateAsync(keysToCreate, { val: JSON.stringify(dataToParse2["status"][keysToCreate]).toString(), ack: true });
+							} else {
+								await adapter.setStateAsync(keysToCreate, { val: dataToParse2["status"][keysToCreate], ack: true });
+							}
 						}
 					}
 				} else {
