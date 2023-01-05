@@ -70,6 +70,7 @@ Thanks to joscha82 we know: https://github.com/joscha82/wattpilot/blob/main/API.
 ## Developers
 - [SebastianHanz](https://github.com/SebastianHanz)
 - [tim2zg](https://github.com/tim2zg)
+- [derHaubi](https://github.com/derHaubi)
 
 ### Changelog
 <!--
