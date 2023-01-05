@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "fronius-wattpilot",
-    "version": "4.2.0",
+    "version": "4.2.1",
     "news": {
+      "4.2.1": {
+        "en": "Fixed bug in the all values mode / parser",
+        "de": "Fehler behoben in allen Werten Modus / Parser",
+        "ru": "Исправлена ошибка в режиме всех значений / parser",
+        "pt": "Corrigido o erro no modo de todos os valores / parser",
+        "nl": "Gerepareerde insect in alle waarden gemoduseerd/ parser",
+        "fr": "Correction de bug dans le mode toutes les valeurs / parser",
+        "it": "Corretto bug nella modalità tutti i valori / parser",
+        "es": "Error fijo en el modo de todos los valores / parser",
+        "pl": "Fixed bug w trybie wszystkich wartości / parser",
+        "uk": "Виправлена помилка в всіх значеннях режим / parser",
+        "zh-cn": "在所有价值观模式中都配有泡沫。"
+      },
       "4.2.0": {
         "en": "Some QoL improvements",
         "de": "Einige QoL Verbesserungen",
@@ -80,18 +93,6 @@
         "pl": "Mała zmiana na pakiet. json i io-package. json",
         "uk": "Невеликі зміни в пакеті. json і io-package. свінгери",
         "zh-cn": "对一揽子计划的小改动。 json和碘。 json"
-      },
-      "3.2.4": {
-        "en": "Fiexed cool down timer for normal values",
-        "de": "Fiexed kühlen Timer für Normalwerte",
-        "ru": "Fiexed прохладный таймер для нормальных значений",
-        "pt": "Temporizador de arrefecimento apertado para valores normais",
-        "nl": "Verkoelde klokkenluider voor normale waarden",
-        "fr": "Temporaire frigorifique pour valeurs normales",
-        "it": "Timer di raffreddamento a fessura per valori normali",
-        "es": "Temporizador ajustado para valores normales",
-        "pl": "50 razy chłodził czaszkę dla wartości normalnych",
-        "zh-cn": "正常价值的冷冻时间"
       }
     },
     "title": "Fronius Wattpilot",
