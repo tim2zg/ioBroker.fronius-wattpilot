@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "fronius-wattpilot",
-    "version": "4.2.1",
+    "version": "4.3.0",
     "news": {
+      "4.3.0": {
+        "en": "dependency updates\nstate updates",
+        "de": "abhängigkeitsaktualisierung\nzustandsänderungen",
+        "ru": "обновления зависимости\nгосударственные обновления",
+        "pt": "atualizações de dependência\natualizações do estado",
+        "nl": "afhankelijke updates\nvertaling:",
+        "fr": "mises à jour de la dépendance\nmises à jour de l ' état",
+        "it": "aggiornamenti di dipendenza\naggiornamenti di stato",
+        "es": "actualizaciones de la dependencia\nactualizaciones estatales",
+        "pl": "aktualizacja\naktualizacja stanu",
+        "uk": "оновлення залежності\nоновлення стану",
+        "zh-cn": "依赖性最新资料\n国家最新资料"
+      },
       "4.2.1": {
         "en": "Fixed bug in the all values mode / parser",
         "de": "Fehler behoben in allen Werten Modus / Parser",
@@ -80,19 +93,6 @@
         "pl": "Fixed a bug, gdzie adapter nie ustawił odpowiednich etykiet dla stanów\nPoprawa wydajności\nZależności Fixa",
         "uk": "Виправлено помилку, де адаптер не встановлює правильні етикетки для станів\nПідвищення продуктивності\nФіксовані залежності",
         "zh-cn": "固定配有制,使适应者不会为各州设置正确的标签。\n业绩改善\n固定的依赖"
-      },
-      "3.2.5": {
-        "en": "Small changes to the package.json and io-package.json",
-        "de": "Kleine Änderungen am Paket. json und io-package. Json",
-        "ru": "Небольшие изменения в пакете. json и io-package. Джсон",
-        "pt": "Pequenas mudanças no pacote. json e io-package. O que foi",
-        "nl": "Kleine veranderingen in het pakket. Json en io-package. Json",
-        "fr": "De petits changements au paquet. Json et io-package. json",
-        "it": "Piccoli cambiamenti al pacchetto. json e io-package. J",
-        "es": "Pequeños cambios en el paquete. json y io-package. json",
-        "pl": "Mała zmiana na pakiet. json i io-package. json",
-        "uk": "Невеликі зміни в пакеті. json і io-package. свінгери",
-        "zh-cn": "对一揽子计划的小改动。 json和碘。 json"
       }
     },
     "title": "Fronius Wattpilot",
