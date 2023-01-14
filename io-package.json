@@ -143,16 +143,20 @@
     "connectionType": "local",
     "dataSource": "poll",
     "materialize": true,
+    "globalDependencies": [
+      {
+        "admin": ">4.0.9"
+      }
+    ],
     "dependencies": [
       {
-        "js-controller": ">=3",
-        "admin": ">4.0.9"
+        "js-controller": ">=3"
       }
     ]
   },
   "native": {
-    "ip-host": "IP-Address des WattPilot",
-    "pass": "Password",
+    "ip-host": "IP-Address des WattPilots",
+    "pass": "",
     "freq": 1,
     "serial-number": "XXXXXXXX",
     "parser": true,

@@ -52,16 +52,16 @@ class FroniusWattpilot extends utils.Adapter {
 		this.setState("info.connection", false, true);
 		logger.info("Try to connect to: " + hostToConnect);
 
-		if (hostToConnect === undefined || password === undefined || password === "Password" || hostToConnect === "ws://IP-Address des WattPilot/ws" || hostToConnect === "wss://app.wattpilot.io/app/XXXXXXXX?version=1.2.9") {
+		if (hostToConnect === undefined || password === undefined || password === "Password" || hostToConnect === "ws://IP-Address des WattPilots/ws" || hostToConnect === "wss://app.wattpilot.io/app/XXXXXXXX?version=1.2.9") {
 			logger.error("Please use a valid host and password");
 		} else {
-			await createObjectAsync("set_power", "number", "number", true, true);
+			await createObjectAsync("set_power", "value", "number", true, true);
 			this.subscribeStates("set_power");
 
-			await createObjectAsync("set_mode", "string", "number", true, true);
+			await createObjectAsync("set_mode", "value", "number", true, true);
 			this.subscribeStates("set_mode");
 
-			await createObjectAsync("set_state", "string", "string", true, true);
+			await createObjectAsync("set_state", "value", "string", true, true);
 			this.subscribeStates("set_state");
 
 			this.connectionUpTimeMonitor = setInterval(checkUpTime, 1000 * 60 * 2.5);
