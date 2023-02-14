@@ -126,17 +126,9 @@ class FroniusWattpilot extends utils.Adapter {
 				} else if (messageData["type"] === "authError") { // Handle Auth Error
 					logger.error("Password wrong!");
 				} else {
-					handleData(messageData);
+					strictParser(messageData);
 				}
 			});
-		}
-
-		function handleData(dataToHandle) {
-			if (useNormalParser) {
-				strictParser(dataToHandle);
-			} else {
-				dynamicParser(dataToHandle);
-			}
 		}
 
 		async function strictParser(dataToParse) {
@@ -433,7 +425,7 @@ class FroniusWattpilot extends utils.Adapter {
 								if (timeout[dataKeyToParse] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
 									timeout[dataKeyToParse] = Date.now();
 									if (data2["status"][dataKeyToParse] !== null) {
-										if (data2["status"][dataKeyToParse].toString().includes(",") || data2["status"][dataKeyToParse].toString().includes("[") || dataToParse2["status"][keysToCreate].toString().includes("{")) {
+										if (data2["status"][dataKeyToParse].toString().includes(",") || data2["status"][dataKeyToParse].toString().includes("[") || data2["status"][dataKeyToParse].toString().includes("{")) {
 											await adapter.setStateAsync(dataKeyToParse, { val: JSON.stringify(data2["status"][dataKeyToParse]).toString(), ack: true });
 										} else {
 											await adapter.setStateAsync(dataKeyToParse, { val: data2["status"][dataKeyToParse], ack: true });
