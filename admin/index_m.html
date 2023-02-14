@@ -92,16 +92,27 @@
 				<label for="pass" class="translate">Password</label>
 			</div>
 
+			<div class="col s6 input-field">
+				<input type="number" class="value" id="freq" />
+				<label for="freq" class="translate">Interval to receive Wattpilot data (s)</label>
+			</div>
+
 			<div class="input-field col s12 m6 l2">
 				<input class="value" id="parser" type="checkbox"/>
-				<label for="parser" class="translate">Only read most common data-points</label><br />
-				<span class="translate">Uncheck to get any data available from API</span>
+				<label for="parser" class="translate">Only Common Data</label><br/>
+				<span class="translate">Uncheck to get any data available from API</span><br/>
 			</div>
 
 			<div class="input-field col s12 m6 l4">
 				<input class="value" id="cloud" type="checkbox"/>
-				<label for="cloud" class="translate">Use cloud to get data from the Pilot</label><br />
-				<span class="translate">Not recommended in a local environment</span>
+				<label for="cloud" class="translate">Use cloud to get data from the Pilot</label><br/>
+				<span class="translate">Not recommended in a local environment</span><br/>
+			</div>
+
+			<div class="input-field col s12 m6 l4">
+				<input class="value" id="addParam" type="text"/>
+				<label for="addParam" class="translate">Give additional Parameters as semicolon (;) seperated list</label><br/>
+				<span class="translate">only needed if Only raed most... is checked</span><br/>
 			</div>
 		</div>
 

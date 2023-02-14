@@ -70,12 +70,55 @@ Thanks to joscha82 we know: https://github.com/joscha82/wattpilot/blob/main/API.
 ## Developers
 - [SebastianHanz](https://github.com/SebastianHanz)
 - [tim2zg](https://github.com/tim2zg)
+- [derHaubi](https://github.com/derHaubi)
 
 ### Changelog
 <!--
     Placeholder for the next version (at the beginning of the line):
-    ## **WORK IN PROGRESS**
+    ### **WORK IN PROGRESS**
 -->
+### 4.3.0 (2023-01-14)
+- dependency updates
+- state updates
+
+### 4.2.1 (2023-01-05)
+- Fixed bug in the all values mode / parser
+
+### 4.2.0 (2023-01-01)
+- Some QoL improvements
+
+### 4.1.0 (2022-12-30)
+- Added the possibility to add states manually via the instance-settings
+- Fixed the bug where the adapter didn't set the correct value types
+- Added some quality of life improvements
+
+### 4.0.0 (2022-11-30)
+- Fixed timing issue 
+- Added set_power and set_mode states
+
+### 3.3.1 (2022-11-17)
+- Fixed a bug where set_state was not writable
+
+### 3.3.0 (2022-11-17)
+- Fixed a bug where the adapter would not set the correct labels for the states
+- Performance improvements
+- Fixed dependencies
+
+### 3.2.5 (2022-10-14)
+- Small changes to the package.json and io-package.json
+
+### 3.2.4 (2022-10-11) 
+- Fiexed cool down timer for normal values
+
+### 3.2.3 (2022-10-08)
+- Bug fixed where the adapter would not respect the timout timer and would try to constantly reconnect to the WattPilot
+- Bug fixed where the adapter would send a wrong disconnect message to the WattPilot
+
+### 3.2.2 (2022-10-06)
+- Fixed reconnecting frequency
+- Fixed multiple Websocket connections
+- Added frequency handler
+
 ### 3.2.1 (2022-10-02)
 - Fixed reconnecting to the WebSocket
 - Restructured the code

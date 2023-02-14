@@ -97,5 +97,8 @@ systemDictionary = {
 		"es": "Utilice la nube para obtener datos del Piloto",
 		"pl": "Użycie chmur dostarczenia danych z pilota",
 		"zh-cn": "利用云雾器从试验中获得数据"
+	},
+	"only needed if Only raed most... is checked": {
+		"en": "only needed if Only raed most... is checked"
 	}
 };

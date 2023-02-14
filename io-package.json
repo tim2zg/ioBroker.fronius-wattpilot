@@ -1,91 +1,98 @@
 {
   "common": {
     "name": "fronius-wattpilot",
-    "version": "3.2.1",
+    "version": "4.3.0",
     "news": {
-      "3.2.1": {
-        "en": "Fixed reconnecting to the WebSocket\nRestructured the code",
-        "de": "Reconnecting mit dem WebSocket behoben\nDen Code umstrukturieren",
-        "ru": "Исправлено переподключение к WebSocket\nПерестроен код",
-        "pt": "Reconexão fixa ao WebSocket\nReestruturação do código",
-        "nl": "Vertaling:\nHerstructureerde de code",
-        "fr": "Reconnecté fixe au WebSocket\nRestructurée du code",
-        "it": "Ricollegamento fisso al WebSocket\nRistrutturato il codice",
-        "es": "Conexión fija al WebSocket\nReestructurado el código",
-        "pl": "Fixed ponownie połączył się z WebSocket\nRestrukturyzacja kodu",
-        "zh-cn": "B. 固定与网站连接\nA. 守则的结构"
+      "4.3.0": {
+        "en": "dependency updates\nstate updates",
+        "de": "abhängigkeitsaktualisierung\nzustandsänderungen",
+        "ru": "обновления зависимости\nгосударственные обновления",
+        "pt": "atualizações de dependência\natualizações do estado",
+        "nl": "afhankelijke updates\nvertaling:",
+        "fr": "mises à jour de la dépendance\nmises à jour de l ' état",
+        "it": "aggiornamenti di dipendenza\naggiornamenti di stato",
+        "es": "actualizaciones de la dependencia\nactualizaciones estatales",
+        "pl": "aktualizacja\naktualizacja stanu",
+        "uk": "оновлення залежності\nоновлення стану",
+        "zh-cn": "依赖性最新资料\n国家最新资料"
       },
-      "3.2.0": {
-        "en": "Implemented reconnecting\nShrank code down",
-        "de": "Ergänzende Umschaltung\nShrank code down",
-        "ru": "Реализовано переподключение\nShrank код вниз",
-        "pt": "Reconexão implementada\nCódigo de Shrank para baixo",
-        "nl": "Vertaling:\nShrank code",
-        "fr": "Reconnexion appliquée\nCode de triage",
-        "it": "Ricollegamento attuato\nCodice Shrank",
-        "es": "Reconexión aplicada\nCódigo Shrank abajo",
-        "pl": "Implementacja\nKod Shranka",
-        "zh-cn": "执行重新连接\nHrank守则"
+      "4.2.1": {
+        "en": "Fixed bug in the all values mode / parser",
+        "de": "Fehler behoben in allen Werten Modus / Parser",
+        "ru": "Исправлена ошибка в режиме всех значений / parser",
+        "pt": "Corrigido o erro no modo de todos os valores / parser",
+        "nl": "Gerepareerde insect in alle waarden gemoduseerd/ parser",
+        "fr": "Correction de bug dans le mode toutes les valeurs / parser",
+        "it": "Corretto bug nella modalità tutti i valori / parser",
+        "es": "Error fijo en el modo de todos los valores / parser",
+        "pl": "Fixed bug w trybie wszystkich wartości / parser",
+        "uk": "Виправлена помилка в всіх значеннях режим / parser",
+        "zh-cn": "在所有价值观模式中都配有泡沫。"
       },
-      "3.1.0": {
-        "en": "Added the option to use the cloud as a datasource\nUpdated GitHub workflows",
-        "de": "Hinzufügen der Option, die Cloud als Datenquelle zu verwenden\nAktualisierte GitHub-Workflows",
-        "ru": "Добавлена возможность использования облака в качестве источника данных\nОбновленные рабочие процессы GitHub",
-        "pt": "Adicionado a opção de usar a nuvem como um datasource\nFluxos de trabalho GitHub atualizados",
-        "nl": "Voeg de optie toe om de wolk als dataource te gebruiken\nQuality over Quantity (QoQ) Releases Vertaling:",
-        "fr": "Ajout de l'option d'utiliser le nuage comme source de données\nMise à jour des flux de travail GitHub",
-        "it": "Aggiunta l'opzione di utilizzare il cloud come datasource\nFlussi di lavoro aggiornati GitHub",
-        "es": "Se agregó la opción de utilizar la nube como fuente de datos\nActualización de los flujos de trabajo GitHub",
-        "pl": "Dodał opcję używania chmur jako źródła danych\nRezultaty prac GitHub",
-        "zh-cn": "增加利用云雾作为数据来源的选择\nB. 最新GitHub工作流程"
+      "4.2.0": {
+        "en": "Some QoL improvements",
+        "de": "Einige QoL Verbesserungen",
+        "ru": "Некоторые улучшения QoL",
+        "pt": "Algumas melhorias de QoL",
+        "nl": "Wat QoL verbetering",
+        "fr": "Quelques améliorations QoL",
+        "it": "Alcuni miglioramenti QoL",
+        "es": "Algunas mejoras de QoL",
+        "pl": "Niektóre poprawy QoL",
+        "uk": "Деякі покращення QoL",
+        "zh-cn": "B. 改进"
       },
-      "3.0.0": {
-        "en": "Updated README.md\nCreated \"examples\"-directory for sample applications\nAdded some translations\nRenamed checkbox \"Parser\" to something more intuitive\nFixxed #4: Datapoint \"map\" now gets created correctly\nFixxed #5: Password-characters are no longer visible\nFixxed type conflict of cableType",
-        "de": "Aktualisierte README.md\nErstellte Beispiele\"-Richtlinie für Probenanwendungen\nÜbersetzungen hinzugefügt\nUmbenennte Checkbox Parser zu etwas intuitiver\nFixxed #4: Datapoint Map wird jetzt richtig erstellt\nFixxed #5: Passwörter sind nicht mehr sichtbar\nFeste Art Konflikt des Kabels Art",
-        "ru": "Обновлено README.md\nСозданные примеры\"-директория для примерных приложений\nДобавлены некоторые переводы\nПереименованный checkbox Парсер к чему-то более интуитивно\nFixxed #4: карта Datapoint теперь создается правильно\nFixxed #5: Пароль-чартеры больше не видны\nФиксированный тип конфликта кабеля Тип",
-        "pt": "Atualizado README.md\nExemplos criados\"-diretório para aplicações de amostra\nAdicionado algumas traduções\nCaixa de verificação Renamed Parser para algo mais intuitivo\nFixxed #4: O mapa de datapoint agora é criado corretamente\nFixxed #5: Os caracteres de senha não são mais visíveis\nConflito de tipo fixo de cabo Tipo",
-        "nl": "Upded README\nGecreëerde voorbeelden\nVertaling:\nHernoemde chequebox Voor iets intuïtiefs\nVertaling:\nVertaling:\nQuality over Quantity (QoQ) Releases Vertaling: Type",
-        "fr": "Actualisé README.md\nExemples créés \"directoire pour des applications échantillon\nAjout de quelques traductions\nRenommée case à cocher Parser à quelque chose de plus intuitif\nCorrection #4: La carte Datapoint est maintenant créée correctement\nFixxed #5: Les caractères de mot de passe ne sont plus visibles\nType fixe conflit de câble Type",
-        "it": "Aggiornato README.md\nEsempi creati\"-directory per applicazioni campione\nAggiunto alcune traduzioni\nCheckbox rinominato Parser a qualcosa di più intuitivo\nFixxed #4: La mappa di Datapoint viene creata correttamente\nFixxed #5: I caratteri password non sono più visibili\nTipo fisso conflitto di cavo Tipo",
-        "es": "Actualizado README.md\nEjemplos creados\"-directorio para aplicaciones de muestra\nAñadido algunas traducciones\nRenamed checkbox Parser a algo más intuitivo\nFijación #4: El mapa de Datapoint ahora se crea correctamente\nFijación #5: Los caracteres de contraseña ya no son visibles\nConflicto tipo fijo de cable Tipo",
-        "pl": "README.md\nProduktywne przykłady dla aplikacji próbkowych\nDodać niektóre tłumaczenia\nRenamed checkbox Parser do czegoś bardziej intuicyjnego\nFixxa #4: Mapa danych została stworzona poprawnie\nFixxe #5: Nie są już widoczne\nKonflikt typu kabelowego Typ",
-        "zh-cn": "更新的中小企业\n抽样申请的举证\n增加一些翻译\n重新命名的检查箱 更多意外困难\n例4:数据点图现在正确地制作\n第5号:护照前导游不再见\n电缆冲突 类型"
+      "4.1.0": {
+        "en": "Added the possibility to add states manually via the instance-settings\nFixed the bug where the adapter didn't set the correct value types\nAdded some quality of life improvements",
+        "de": "Hinzufügen der Möglichkeit, Zustände manuell über die Instanzeinstellungen hinzuzufügen\nFehler behoben, bei dem der Adapter die richtigen Wertetypen nicht eingestellt hat\nHinzugefügt einige Qualität der Lebensverbesserungen",
+        "ru": "Добавлена возможность добавления штатов вручную через инструкцию\nИсправлена ошибка, где адаптер не установил правильные типы значения\nДобавлены некоторые улучшения качества жизни",
+        "pt": "Adicionado a possibilidade de adicionar estados manualmente através das configurações de instância\nCorrigido o bug onde o adaptador não definiu os tipos de valor corretos\nAdicionado alguns qualidade de melhorias de vida",
+        "nl": "Voeg de mogelijkheid toe om de staat handmatig toe te voegen via de instance-setting\nDe insect waar de adapter de juiste waardestypes niet plaatste\nVoegde een aantal levensverbeteringen toe",
+        "fr": "Ajout de la possibilité d'ajouter manuellement des états via les paramètres d'instance\nCorrection du bug où l'adaptateur n'a pas défini les types de valeur correctes\nAjout de quelques améliorations de qualité de vie",
+        "it": "Aggiunta la possibilità di aggiungere gli stati manualmente tramite le impostazioni delle istanze\nRisolto il bug in cui l'adattatore non ha impostato i tipi di valore corretti\nAggiunto alcune qualità di vita miglioramenti",
+        "es": "Agregó la posibilidad de añadir estados manualmente a través de los puntos de instancia\nArregla el fallo donde el adaptador no fijó los tipos de valor correctos\nAñadido cierta calidad de las mejoras de la vida",
+        "pl": "Dodać możliwość dodania stanów ręcznie poprzez ustawienie instancji\nBłękitne błędy, w których adapter nie ustawił prawidłowych typów wartości\nDostarczanie pewnej jakości życia",
+        "uk": "Додана можливість додавати стани вручну за допомогою параметра\nВиправлено помилку, де перехідник не встановлює правильне значення\nДодана якість поліпшення життя",
+        "zh-cn": "增加通过制定示范办法故意增加国家的可能性\n确定适应者确定的正确价值类型\n提高生活质量"
       },
-      "2.2.4": {
-        "en": "SebastianHanz fixed infinite RAM-usage\nadded some description",
-        "de": "SebastianHanz fix unendliche RAM-Nutzung\nbeschreibung",
-        "ru": "SebastianHanz фиксированный бесконечный RAM-usage\nдобавлено описание",
-        "pt": "SebastianHanz fixou a utilização infinita de RAM\nadicionou alguma descrição",
-        "nl": "SebastianHanz heeft oneindige RAM-gebruik\nvoegde een beschrijving toe",
-        "fr": "SebastianHanz fixe infini RAM-usage\najouté une description",
-        "it": "SebastianHanz fisso infinito RAM-usage\naggiunto qualche descrizione",
-        "es": "SebastianHanz solucionó infinita RAM-usage\nañadido una descripción",
-        "pl": "SebastianHanz ustabilizował nieskończoną ilość pamięci RAM\ndodać do opisu",
-        "zh-cn": "Sebastian Haynz 固定在最后阶段\n附加说明"
+      "4.0.0": {
+        "en": "Fixed timing issue \nAdded set_power and set_mode states",
+        "de": "Fixes Timing Problem\nHinzugefügt set_power und set_mode",
+        "ru": "Исправлена проблема времени\nДобавлено set_power и set_mode состояния",
+        "pt": "Problema de tempo fixo\nAdicionado set_power e set_mode estados",
+        "nl": "Quality over Quantity (QoQ) Releases Vertaling:\nGevoegd in de set en zet de staat klaar",
+        "fr": "Problème de calendrier fixe\nAjout de set_power et set_mode states",
+        "it": "Emissione di tempi fissi\nAggiunto set_power e set_mode stati",
+        "es": "Cuestión de tiempo fijo\nAñadido set_power and set_mode states",
+        "pl": "Śmiały problem\nAdded set_power and set_mod states (ang.)",
+        "uk": "Фіксований термін дії\nДодано set_power і set_mode штати",
+        "zh-cn": "固定时间问题\n增 编"
       },
-      "2.2.3": {
-        "en": "SebastianHanz fixed type-conflicts. Thank you!",
-        "de": "SebastianHanz fixierte Typenkonflikte. Danke!",
-        "ru": "SebastianHanz фиксированные тип-конфликты. Спасибо!",
-        "pt": "SebastianHanz fixo tipo-conflitos. Obrigado!",
-        "nl": "SebastianHanz heeft type-conflicten gemaakt. Dank je!",
-        "fr": "SebastianHanz fixe type-conflicts. Merci !",
-        "it": "SebastianHanz ha riparato i conflitti di tipo. Grazie!",
-        "es": "SebastianHanz solucionó conflictos de tipo. ¡Gracias!",
-        "pl": "SebastianHanz stacjonował w typie. Dziękuję!",
-        "zh-cn": "Sebastian Haynz固定类型冲突。 谢!"
+      "3.3.1": {
+        "en": "Fixed a bug where set_state was not writable",
+        "de": "Fehler behoben, bei dem set_state nicht schreibbar war",
+        "ru": "Исправлена ошибка, в которой set_state не был writable",
+        "pt": "Corrigido um bug onde set_state não foi writable",
+        "nl": "Ik heb een insect gerepareerd waar het landgoed niet geschreven was",
+        "fr": "Correction d'un bug où set_state n'était pas écriture",
+        "it": "Corretto un bug in cui set_state non era scrivibile",
+        "es": "Arreglado un error donde set_state no era writable",
+        "pl": "Błękitnym błędem, w którym ustawiono _state, nie był w stanie sfałszować",
+        "uk": "Виправлено помилку, де set_state не був",
+        "zh-cn": "A. 固定的黑色,即国家不可原状。"
       },
-      "2.2.2": {
-        "en": "Bug fixes",
-        "de": "Fehlerbehebungen",
-        "ru": "Исправления ошибок",
-        "pt": "Correções de bugs",
-        "nl": "Bug repareert",
-        "fr": "Corrections",
-        "it": "Correzioni di bug",
-        "es": "Corrección de errores",
-        "pl": "Bug",
-        "zh-cn": "Bug fix"
+      "3.3.0": {
+        "en": "Fixed a bug where the adapter would not set the correct labels for the states\nPerformance improvements\nFixed dependencies",
+        "de": "Fehler behoben, bei dem der Adapter die richtigen Etiketten für die Zustände nicht einstellen würde\nLeistungsverbesserungen\nFeste Abhängigkeiten",
+        "ru": "Исправлена ошибка, где адаптер не будет устанавливать правильные ярлыки для государств\nУлучшения производительности\nФиксированные зависимости",
+        "pt": "Corrigido um bug onde o adaptador não definiria as etiquetas corretas para os estados\nMelhorias de desempenho\nDependências fixas",
+        "nl": "Een insect waar de adapter de juiste etiketten niet zou plaatsen voor de staat\nVerbetering\nVertaling:",
+        "fr": "Correction d'un bug où l'adaptateur ne définirait pas les étiquettes correctes pour les états\nAmélioration des performances\nDépendances fixes",
+        "it": "Risolto un bug in cui l'adattatore non impostare le etichette corrette per gli stati\nMiglioramento delle prestazioni\nDipendenze fisse",
+        "es": "Arregló un fallo donde el adaptador no establecería las etiquetas correctas para los estados\nMejora del desempeño\nDependencias fijas",
+        "pl": "Fixed a bug, gdzie adapter nie ustawił odpowiednich etykiet dla stanów\nPoprawa wydajności\nZależności Fixa",
+        "uk": "Виправлено помилку, де адаптер не встановлює правильні етикетки для станів\nПідвищення продуктивності\nФіксовані залежності",
+        "zh-cn": "固定配有制,使适应者不会为各州设置正确的标签。\n业绩改善\n固定的依赖"
       }
     },
     "title": "Fronius Wattpilot",
@@ -114,12 +121,12 @@
       "zh-cn": "fronius-wattpilot"
     },
     "authors": [
-      "tim2zg <tim2zg@protonmail.com>"
+      "tim2zg <tim2zg@protonmail.com>",
+      "SebastianHanz <>",
+      "derHaubi <>"
     ],
     "keywords": [
-      "ioBroker",
       "template",
-      "Smart Home",
       "home automation"
     ],
     "license": "MIT",
@@ -131,23 +138,30 @@
     "readme": "https://github.com/tim2zg/ioBroker.fronius-wattpilot/blob/main/README.md",
     "loglevel": "info",
     "mode": "daemon",
-    "type": "communication",
+    "type": "vehicle",
     "compact": true,
     "connectionType": "local",
     "dataSource": "poll",
     "materialize": true,
+    "globalDependencies": [
+      {
+        "admin": ">4.0.9"
+      }
+    ],
     "dependencies": [
       {
-        "js-controller": ">=2.0.0"
+        "js-controller": ">=3"
       }
     ]
   },
   "native": {
-    "ip-host": "ip-host",
-    "pass": "pass",
+    "ip-host": "IP-Address des WattPilots",
+    "pass": "",
+    "freq": 1,
     "serial-number": "XXXXXXXX",
     "parser": true,
-    "cloud": false
+    "cloud": false,
+    "addParam": ""
   },
   "objects": [],
   "protectedNative": [
