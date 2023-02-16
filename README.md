@@ -77,8 +77,7 @@ Thanks to joscha82 we know: https://github.com/joscha82/wattpilot/blob/main/API.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-
-### **WORK IN PROGRESS**
+### 4.4.0 (2023-02-16)
 - known states will now be updated even if the dynamic parser is enabled
 
 ### 4.3.0 (2023-01-14)

@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "fronius-wattpilot",
-    "version": "4.3.0",
+    "version": "4.4.0",
     "news": {
+      "4.4.0": {
+        "en": "known states will now be updated even if the dynamic parser is enabled",
+        "de": "bekannte zustände werden nun aktualisiert, auch wenn der dynamische parser aktiviert ist",
+        "ru": "известные государства теперь будут обновляться, даже если динамический парсер включен",
+        "pt": "estados conhecidos agora serão atualizados, mesmo se o analisador dinâmico estiver habilitado",
+        "nl": "de bekende staat zal nu worden geüpload, zelfs als de dynamische parochie in staat is",
+        "fr": "les états connus seront maintenant mis à jour même si le parseur dynamique est activé",
+        "it": "gli stati conosciuti saranno ora aggiornati anche se il parser dinamico è abilitato",
+        "es": "los estados conocidos serán actualizados incluso si el analizador dinámico está habilitado",
+        "pl": "obecnie znane stany mogą być aktualizowane, nawet jeśli parser dynamiczny może być użyty",
+        "uk": "відомі стани тепер будуть оновлені навіть якщо ввімкнено динамічний аналіз",
+        "zh-cn": "已知国家现在将得到更新,即使有活力的序号得以更新。"
+      },
       "4.3.0": {
         "en": "dependency updates\nstate updates",
         "de": "abhängigkeitsaktualisierung\nzustandsänderungen",
@@ -80,19 +93,6 @@
         "pl": "Błękitnym błędem, w którym ustawiono _state, nie był w stanie sfałszować",
         "uk": "Виправлено помилку, де set_state не був",
         "zh-cn": "A. 固定的黑色,即国家不可原状。"
-      },
-      "3.3.0": {
-        "en": "Fixed a bug where the adapter would not set the correct labels for the states\nPerformance improvements\nFixed dependencies",
-        "de": "Fehler behoben, bei dem der Adapter die richtigen Etiketten für die Zustände nicht einstellen würde\nLeistungsverbesserungen\nFeste Abhängigkeiten",
-        "ru": "Исправлена ошибка, где адаптер не будет устанавливать правильные ярлыки для государств\nУлучшения производительности\nФиксированные зависимости",
-        "pt": "Corrigido um bug onde o adaptador não definiria as etiquetas corretas para os estados\nMelhorias de desempenho\nDependências fixas",
-        "nl": "Een insect waar de adapter de juiste etiketten niet zou plaatsen voor de staat\nVerbetering\nVertaling:",
-        "fr": "Correction d'un bug où l'adaptateur ne définirait pas les étiquettes correctes pour les états\nAmélioration des performances\nDépendances fixes",
-        "it": "Risolto un bug in cui l'adattatore non impostare le etichette corrette per gli stati\nMiglioramento delle prestazioni\nDipendenze fisse",
-        "es": "Arregló un fallo donde el adaptador no establecería las etiquetas correctas para los estados\nMejora del desempeño\nDependencias fijas",
-        "pl": "Fixed a bug, gdzie adapter nie ustawił odpowiednich etykiet dla stanów\nPoprawa wydajności\nZależności Fixa",
-        "uk": "Виправлено помилку, де адаптер не встановлює правильні етикетки для станів\nПідвищення продуктивності\nФіксовані залежності",
-        "zh-cn": "固定配有制,使适应者不会为各州设置正确的标签。\n业绩改善\n固定的依赖"
       }
     },
     "title": "Fronius Wattpilot",
