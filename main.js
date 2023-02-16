@@ -126,17 +126,9 @@ class FroniusWattpilot extends utils.Adapter {
 				} else if (messageData["type"] === "authError") { // Handle Auth Error
 					logger.error("Password wrong!");
 				} else {
-					handleData(messageData);
+					strictParser(messageData);
 				}
 			});
-		}
-
-		function handleData(dataToHandle) {
-			if (useNormalParser) {
-				strictParser(dataToHandle);
-			} else {
-				dynamicParser(dataToHandle);
-			}
 		}
 
 		async function strictParser(dataToParse) {
@@ -429,6 +421,18 @@ class FroniusWattpilot extends utils.Adapter {
 							// No State to parse found for this key, check if user wants this state
 						default:
 							await checkCustomAddedParameters(data2["status"][dataKeyToParse], dataKeyToParse);
+							if (!useNormalParser) {
+								if (timeout[dataKeyToParse] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
+									timeout[dataKeyToParse] = Date.now();
+									if (data2["status"][dataKeyToParse] !== null) {
+										if (data2["status"][dataKeyToParse].toString().includes(",") || data2["status"][dataKeyToParse].toString().includes("[") || data2["status"][dataKeyToParse].toString().includes("{")) {
+											await adapter.setStateAsync(dataKeyToParse, { val: JSON.stringify(data2["status"][dataKeyToParse]).toString(), ack: true });
+										} else {
+											await adapter.setStateAsync(dataKeyToParse, { val: data2["status"][dataKeyToParse], ack: true });
+										}
+									}
+								}
+							}
 
 					}
 				} else {
@@ -699,9 +703,35 @@ class FroniusWattpilot extends utils.Adapter {
 							await adapter.setStateAsync("PVUselessPower", { val: data2["status"][dataKeyToParse], ack: true });
 							break;
 
-							// No data-key found,
+							// No data-key found
 						default:
 							await checkCustomAddedParameters(dataKeyToParse, data2["status"][dataKeyToParse]);
+							if (!useNormalParser) {
+								const dataJSON = JSON.stringify(data2["status"][dataKeyToParse]);
+								if (dataJSON !== undefined) {
+									timeout[dataKeyToParse] = Date.now();
+									// @ts-ignore
+									if (!isNaN(dataJSON)) {
+										await createObjectAsync(dataKeyToParse, "value", "number");
+									} else if (dataJSON.toLowerCase() === "true" || dataJSON.toLowerCase() === "false") {
+										await createObjectAsync(dataKeyToParse,  "value", "boolean");
+									} else if (dataJSON.includes("[")) {
+										await createObjectAsync(dataKeyToParse, "value", "object");
+									} else {
+										if (dataKeyToParse === "rcd") {
+											await createObjectAsync(dataKeyToParse, "value", "number");
+										} else {
+											await createObjectAsync(dataKeyToParse, "value", "string");
+										}
+									}
+									if (dataJSON.includes(",") || dataJSON.includes("[") || dataJSON.includes("{")) {
+										await adapter.setStateAsync(dataKeyToParse, { val: dataJSON.toString(), ack: true });
+									} else {
+										await adapter.setStateAsync(dataKeyToParse, { val: data2["status"][dataKeyToParse], ack: true });
+									}
+									createdStates.push(dataKeyToParse.toString());
+								}
+							}
 					}
 				}
 			}
@@ -757,49 +787,6 @@ class FroniusWattpilot extends utils.Adapter {
 				logger.info("Try to reconnect... Connection LOST!");
 				adapter.setState("info.connection", false, true);
 				createWsConnection();
-			}
-		}
-
-		async function dynamicParser(dataToParse) {
-			const dataToParse2 = dataToParse;
-
-			for (dataToParse in dataToParse["status"]) {
-				const keysToCreate = dataToParse.toString();
-				if (createdStates.includes(keysToCreate)) {
-					if (timeout[keysToCreate] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
-						timeout[keysToCreate] = Date.now();
-						if (dataToParse2["status"][keysToCreate] !== null) {
-							if (dataToParse2["status"][keysToCreate].toString().includes(",") || dataToParse2["status"][keysToCreate].toString().includes("[") || dataToParse2["status"][keysToCreate].toString().includes("{")) {
-								await adapter.setStateAsync(keysToCreate, { val: JSON.stringify(dataToParse2["status"][keysToCreate]).toString(), ack: true });
-							} else {
-								await adapter.setStateAsync(keysToCreate, { val: dataToParse2["status"][keysToCreate], ack: true });
-							}
-						}
-					}
-				} else {
-					timeout[keysToCreate] = Date.now();
-					const dataJSON = JSON.stringify(dataToParse2["status"][keysToCreate]);
-					// @ts-ignore
-					if (!isNaN(dataJSON)) {
-						await createObjectAsync(keysToCreate, "value", "number");
-					} else if (dataJSON.toLowerCase() === "true" || dataJSON.toLowerCase() === "false") {
-						await createObjectAsync(keysToCreate,  "value", "boolean");
-					} else if (dataJSON.includes("[")) {
-						await createObjectAsync(keysToCreate, "value", "object");
-					} else {
-						if (keysToCreate === "rcd") {
-							await createObjectAsync(keysToCreate, "value", "number");
-						} else {
-							await createObjectAsync(keysToCreate, "value", "string");
-						}
-					}
-					if (dataJSON.includes(",") || dataJSON.includes("[") || dataJSON.includes("{")) {
-						await adapter.setStateAsync(keysToCreate, { val: dataJSON.toString(), ack: true });
-					} else {
-						await adapter.setStateAsync(keysToCreate, { val: dataToParse2["status"][keysToCreate], ack: true });
-					}
-					createdStates.push(keysToCreate.toString());
-				}
 			}
 		}
 	}
