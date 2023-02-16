@@ -707,28 +707,30 @@ class FroniusWattpilot extends utils.Adapter {
 						default:
 							await checkCustomAddedParameters(dataKeyToParse, data2["status"][dataKeyToParse]);
 							if (!useNormalParser) {
-								timeout[dataKeyToParse] = Date.now();
 								const dataJSON = JSON.stringify(data2["status"][dataKeyToParse]);
-								// @ts-ignore
-								if (!isNaN(dataJSON)) {
-									await createObjectAsync(dataKeyToParse, "value", "number");
-								} else if (dataJSON.toLowerCase() === "true" || dataJSON.toLowerCase() === "false") {
-									await createObjectAsync(dataKeyToParse,  "value", "boolean");
-								} else if (dataJSON.includes("[")) {
-									await createObjectAsync(dataKeyToParse, "value", "object");
-								} else {
-									if (dataKeyToParse === "rcd") {
+								if (dataJSON !== undefined) {
+									timeout[dataKeyToParse] = Date.now();
+									// @ts-ignore
+									if (!isNaN(dataJSON)) {
 										await createObjectAsync(dataKeyToParse, "value", "number");
+									} else if (dataJSON.toLowerCase() === "true" || dataJSON.toLowerCase() === "false") {
+										await createObjectAsync(dataKeyToParse,  "value", "boolean");
+									} else if (dataJSON.includes("[")) {
+										await createObjectAsync(dataKeyToParse, "value", "object");
 									} else {
-										await createObjectAsync(dataKeyToParse, "value", "string");
+										if (dataKeyToParse === "rcd") {
+											await createObjectAsync(dataKeyToParse, "value", "number");
+										} else {
+											await createObjectAsync(dataKeyToParse, "value", "string");
+										}
 									}
+									if (dataJSON.includes(",") || dataJSON.includes("[") || dataJSON.includes("{")) {
+										await adapter.setStateAsync(dataKeyToParse, { val: dataJSON.toString(), ack: true });
+									} else {
+										await adapter.setStateAsync(dataKeyToParse, { val: data2["status"][dataKeyToParse], ack: true });
+									}
+									createdStates.push(dataKeyToParse.toString());
 								}
-								if (dataJSON.includes(",") || dataJSON.includes("[") || dataJSON.includes("{")) {
-									await adapter.setStateAsync(dataKeyToParse, { val: dataJSON.toString(), ack: true });
-								} else {
-									await adapter.setStateAsync(dataKeyToParse, { val: dataJSON["status"][dataKeyToParse], ack: true });
-								}
-								createdStates.push(dataKeyToParse.toString());
 							}
 					}
 				}
