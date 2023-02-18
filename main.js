@@ -99,7 +99,7 @@ class FroniusWattpilot extends utils.Adapter {
 						} else if (messageData["status"]["lmo"] !== undefined) {
 							adapter.setState("set_mode", messageData["status"]["mode"], true);
 						} else {
-							adapter.setState("set_state", true, true);
+							adapter.setState("set_state", "", true);
 						}
 					} else {
 						logger.error("Error on setting value: " + messageData["message"]);
