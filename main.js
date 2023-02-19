@@ -818,7 +818,6 @@ class FroniusWattpilot extends utils.Adapter {
 	onStateChange(id, state) {
 		if (state && state.ack === false) {
 			if (id.includes("set_state")) {
-				this.log.info(adapter.counter);
 				counter = counter + 1;
 				let stateValue;
 				if (state.val === undefined) {
