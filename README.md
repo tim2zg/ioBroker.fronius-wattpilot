@@ -65,7 +65,7 @@ Thanks to joscha82 we know: https://github.com/joscha82/wattpilot/blob/main/API.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 4.5.0 (2023-02-19)
 - Fixed random log messages
 - Fixed a type conflict at the set_state state
 - Commits from now on should be signed

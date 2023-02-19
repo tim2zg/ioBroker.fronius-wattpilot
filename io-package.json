@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "fronius-wattpilot",
-    "version": "4.4.0",
+    "version": "4.5.0",
     "news": {
+      "4.5.0": {
+        "en": "Fixed random log messages\nFixed a type conflict at the set_state state\nCommits from now on should be signed",
+        "de": "Feste zufällige Log-Nachrichten\nEin Typkonflikt im set_state-Zustand behoben\nMittelbindungen sollten ab sofort unterzeichnet werden",
+        "ru": "Исправлены случайные лог-сообщения\nИсправлен тип конфликта на установленном государстве\nРевизии отныне должны быть подписаны",
+        "pt": "Mensagens de log aleatórias fixas\nCorrigido um conflito de tipo no estado set_state\nOs compromissos a partir de agora devem ser assinados",
+        "nl": "Vertaling:\nEen soort conflict op de staatsstaat\nVanaf nu moeten we ondertekend worden",
+        "fr": "Messages journaliers aléatoires fixes\nCorrection d'un conflit de type à l'état set_state\nLes engagements à partir de maintenant devraient être signés",
+        "it": "Messaggi di registro casuali fissi\nRisolto un conflitto di tipo allo stato set_state\nGli impegni da ora in poi dovrebbero essere firmati",
+        "es": "Mensajes de registro al azar fijos\nArreglado un tipo de conflicto en el estado set_state\nLos compromisos de ahora en adelante deben ser firmados",
+        "pl": "Dane losowe\nZmierzył się z konfliktem typu w państwie stacjonarnym\nOd tego czasu należy podpisać",
+        "uk": "Виправлено випадкові повідомлення журналу\nВиправлено конфлікт типу на державному рівні\nВідтепер слід підписувати",
+        "zh-cn": "固定的随机的逻辑信息\nA. 固定的类型冲突\n现在应签署的各项承诺"
+      },
       "4.4.0": {
         "en": "known states will now be updated even if the dynamic parser is enabled",
         "de": "bekannte zustände werden nun aktualisiert, auch wenn der dynamische parser aktiviert ist",
@@ -80,19 +93,6 @@
         "pl": "Śmiały problem\nAdded set_power and set_mod states (ang.)",
         "uk": "Фіксований термін дії\nДодано set_power і set_mode штати",
         "zh-cn": "固定时间问题\n增 编"
-      },
-      "3.3.1": {
-        "en": "Fixed a bug where set_state was not writable",
-        "de": "Fehler behoben, bei dem set_state nicht schreibbar war",
-        "ru": "Исправлена ошибка, в которой set_state не был writable",
-        "pt": "Corrigido um bug onde set_state não foi writable",
-        "nl": "Ik heb een insect gerepareerd waar het landgoed niet geschreven was",
-        "fr": "Correction d'un bug où set_state n'était pas écriture",
-        "it": "Corretto un bug in cui set_state non era scrivibile",
-        "es": "Arreglado un error donde set_state no era writable",
-        "pl": "Błękitnym błędem, w którym ustawiono _state, nie był w stanie sfałszować",
-        "uk": "Виправлено помилку, де set_state не був",
-        "zh-cn": "A. 固定的黑色,即国家不可原状。"
       }
     },
     "title": "Fronius Wattpilot",
