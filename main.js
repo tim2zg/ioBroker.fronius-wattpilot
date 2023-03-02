@@ -420,7 +420,7 @@ class FroniusWattpilot extends utils.Adapter {
 							break;
 							// No State to parse found for this key, check if user wants this state
 						default:
-							await checkCustomAddedParameters(data2["status"][dataKeyToParse], dataKeyToParse);
+							await checkCustomAddedParameters(dataKeyToParse, data2["status"][dataKeyToParse]);
 							if (!useNormalParser) {
 								if (timeout[dataKeyToParse] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
 									timeout[dataKeyToParse] = Date.now();
