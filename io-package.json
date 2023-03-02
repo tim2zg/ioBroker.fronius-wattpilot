@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "fronius-wattpilot",
-    "version": "4.5.0",
+    "version": "4.5.1",
     "news": {
+      "4.5.1": {
+        "en": "Fixed issue #29 (custom states not working)",
+        "de": "Fixed Ausgabe #29 (Kundenstaaten nicht arbeiten)",
+        "ru": "Исправлена проблема #29 (таможенные государства не работают)",
+        "pt": "Problema fixo #29 (estados personalizados não funcionam)",
+        "nl": "Quality over Quantity (QoQ) Releases Vertaling:",
+        "fr": "Numéro fixe #29 (les états du client ne fonctionnent pas)",
+        "it": "Risolto numero #29 (Stati personalizzati non funziona)",
+        "es": "Cuestión fija #29 (la mayoría de los estados no funcionan)",
+        "pl": "Numer #29 (poziomy nie działają)",
+        "uk": "Виправлено проблему #29 (податкові стани не працюють)",
+        "zh-cn": "固定问题编号:第29号(习惯国家没有工作)"
+      },
       "4.5.0": {
         "en": "Fixed random log messages\nFixed a type conflict at the set_state state\nCommits from now on should be signed",
         "de": "Feste zufällige Log-Nachrichten\nEin Typkonflikt im set_state-Zustand behoben\nMittelbindungen sollten ab sofort unterzeichnet werden",
@@ -80,19 +93,6 @@
         "pl": "Dodać możliwość dodania stanów ręcznie poprzez ustawienie instancji\nBłękitne błędy, w których adapter nie ustawił prawidłowych typów wartości\nDostarczanie pewnej jakości życia",
         "uk": "Додана можливість додавати стани вручну за допомогою параметра\nВиправлено помилку, де перехідник не встановлює правильне значення\nДодана якість поліпшення життя",
         "zh-cn": "增加通过制定示范办法故意增加国家的可能性\n确定适应者确定的正确价值类型\n提高生活质量"
-      },
-      "4.0.0": {
-        "en": "Fixed timing issue \nAdded set_power and set_mode states",
-        "de": "Fixes Timing Problem\nHinzugefügt set_power und set_mode",
-        "ru": "Исправлена проблема времени\nДобавлено set_power и set_mode состояния",
-        "pt": "Problema de tempo fixo\nAdicionado set_power e set_mode estados",
-        "nl": "Quality over Quantity (QoQ) Releases Vertaling:\nGevoegd in de set en zet de staat klaar",
-        "fr": "Problème de calendrier fixe\nAjout de set_power et set_mode states",
-        "it": "Emissione di tempi fissi\nAggiunto set_power e set_mode stati",
-        "es": "Cuestión de tiempo fijo\nAñadido set_power and set_mode states",
-        "pl": "Śmiały problem\nAdded set_power and set_mod states (ang.)",
-        "uk": "Фіксований термін дії\nДодано set_power і set_mode штати",
-        "zh-cn": "固定时间问题\n增 编"
       }
     },
     "title": "Fronius Wattpilot",
