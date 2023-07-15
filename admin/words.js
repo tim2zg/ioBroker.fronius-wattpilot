@@ -98,7 +98,17 @@ systemDictionary = {
 		"pl": "Użycie chmur dostarczenia danych z pilota",
 		"zh-cn": "利用云雾器从试验中获得数据"
 	},
-	"only needed if Only raed most... is checked": {
-		"en": "only needed if Only raed most... is checked"
+	"only needed if Only read most... is checked": {
+		"en": "only needed if \"Only read most...\" is checked",
+		"de": "nur benötigt, wenn \"nur am meisten lesen\". wird geprüft",
+		"ru": "только нужно, если \"Только прочитайте больше\". проверяется",
+		"pt": "só precisava se \"Somente ler mais\". é verificado",
+		"nl": "alleen nodig als \"lezen het meest\". wordt gecontroleerd",
+		"fr": "seulement nécessaire si \"Only read most\". est vérifiée",
+		"it": "solo bisogno se \"Solo leggere la maggior parte\". è controllato",
+		"es": "sólo se necesita si \"sólo leer la mayoría\". Se ha comprobado",
+		"pl": "zdecydowano tylko wtedy, gdy „Only read most”. sprawdzić",
+		"uk": "тільки потрібно, якщо \"Тільки прочитати більшість\". перевіряється",
+		"zh-cn": "只需要“最阅读”。 检查"
 	}
 };
