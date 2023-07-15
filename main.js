@@ -9,6 +9,7 @@ let counter = 0;
 let sse = undefined;
 let hashedPass = undefined;
 let lastUpdate = Date.now();
+const timeout = [];
 
 class FroniusWattpilot extends utils.Adapter {
 	/**
@@ -32,7 +33,6 @@ class FroniusWattpilot extends utils.Adapter {
 		const password = this.config.pass;
 		const useNormalParser = this.config.parser;
 		let hostToConnect;
-		const timeout = [];
 		const start = Date.now();
 		const logger = this.log;
 		const freq = this.config.freq;
@@ -93,11 +93,12 @@ class FroniusWattpilot extends utils.Adapter {
 				}
 
 				if (messageData["type"] === "response") {
+					console.log(messageData);
 					if (messageData["success"]) {
 						if (messageData["status"]["amp"] !== undefined) {
 							adapter.setState("set_power", messageData["status"]["amp"], true);
 						} else if (messageData["status"]["lmo"] !== undefined) {
-							adapter.setState("set_mode", messageData["status"]["mode"], true);
+							adapter.setState("set_mode", messageData["status"]["lmo"], true);
 						} else {
 							adapter.setState("set_state", "", true);
 						}
@@ -138,13 +139,10 @@ class FroniusWattpilot extends utils.Adapter {
 				if (createdStates.includes(dataKeyToParse)) {
 					switch (dataKeyToParse) {
 						case "acs":
-							if (timeout["acs"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
-								timeout["acs"] = Date.now();
-								if (data2["status"][dataKeyToParse] === 0) {
-									await adapter.setStateAsync("AccessState", { val: "Open", ack: true });
-								} else if (data2["status"][dataKeyToParse] === 2) {
-									await adapter.setStateAsync("AccessState", { val: "Wait", ack: true });
-								}
+							if (data2["status"][dataKeyToParse] === 0) {
+								await adapter.setStateAsync("AccessState", { val: "Open", ack: true });
+							} else if (data2["status"][dataKeyToParse] === 1) {
+								await adapter.setStateAsync("AccessState", { val: "Wait", ack: true });
 							}
 							break;
 
@@ -209,20 +207,16 @@ class FroniusWattpilot extends utils.Adapter {
 							break;
 
 						case "ust":
-							if (timeout["ust"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
-								timeout["ust"] = Date.now();
-
-								switch (data2["status"][dataKeyToParse]) {
-									case 0:
-										await adapter.setStateAsync("cableLock", {val: "Normal", ack: true});
-										break;
-									case 1:
-										await adapter.setStateAsync("cableLock", {val: "AutoUnlock", ack: true});
-										break;
-									case 2:
-										await adapter.setStateAsync("cableLock", {val: "AlwaysLock", ack: true});
-										break;
-								}
+							switch (data2["status"][dataKeyToParse]) {
+								case 0:
+									await adapter.setStateAsync("cableLock", {val: "Normal", ack: true});
+									break;
+								case 1:
+									await adapter.setStateAsync("cableLock", {val: "AutoUnlock", ack: true});
+									break;
+								case 2:
+									await adapter.setStateAsync("cableLock", {val: "AlwaysLock", ack: true});
+									break;
 							}
 							break;
 
@@ -237,10 +231,7 @@ class FroniusWattpilot extends utils.Adapter {
 							break;
 
 						case "cae":
-							if (timeout["cae"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
-								timeout["cae"] = Date.now();
-								await adapter.setStateAsync("cae", {val: data2["status"][dataKeyToParse], ack: true});
-							}
+							await adapter.setStateAsync("cae", {val: data2["status"][dataKeyToParse], ack: true});
 							break;
 
 						case "cak":
@@ -251,19 +242,16 @@ class FroniusWattpilot extends utils.Adapter {
 							break;
 
 						case "lmo":
-							if (timeout["lmo"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
-								timeout["lmo"] = Date.now();
-								switch (data2["status"][dataKeyToParse]) {
-									case 3:
-										await adapter.setStateAsync("mode", {val: "Default", ack: true});
-										break;
-									case 4:
-										await adapter.setStateAsync("mode", {val: "Eco", ack: true});
-										break;
-									case 5:
-										await adapter.setStateAsync("mode", {val: "Next Trip", ack: true});
-										break;
-								}
+							switch (data2["status"][dataKeyToParse]) {
+								case 3:
+									await adapter.setStateAsync("mode", {val: "Default", ack: true});
+									break;
+								case 4:
+									await adapter.setStateAsync("mode", {val: "Eco", ack: true});
+									break;
+								case 5:
+									await adapter.setStateAsync("mode", {val: "Next Trip", ack: true});
+									break;
 							}
 							break;
 
@@ -353,10 +341,7 @@ class FroniusWattpilot extends utils.Adapter {
 							break;
 
 						case "amp":
-							if (timeout["amp"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
-								timeout["amp"] = Date.now();
-								await adapter.setStateAsync("amp", { val: data2["status"][dataKeyToParse], ack: true });
-							}
+							await adapter.setStateAsync("amp", { val: data2["status"][dataKeyToParse], ack: true });
 							break;
 
 						case "version":
@@ -439,12 +424,14 @@ class FroniusWattpilot extends utils.Adapter {
 					switch (dataKeyToParse) {
 						case "acs":
 							timeout["acs"] = Date.now();
-							await createObjectAsync("AccessState", "value", "string");
+							await createObjectAsync("AccessState", "value", "string", true, true);
 							createdStates.push("acs");
+
+							adapter.subscribeStates("AccessState");
 
 							if (data2["status"][dataKeyToParse] === 0) {
 								await adapter.setStateAsync("AccessState", { val: "Open", ack: true });
-							} else if (data2["status"][dataKeyToParse] === 2) {
+							} else if (data2["status"][dataKeyToParse] === 1) {
 								await adapter.setStateAsync("AccessState", { val: "Wait", ack: true });
 							}
 							break;
@@ -506,8 +493,10 @@ class FroniusWattpilot extends utils.Adapter {
 
 						case "ust":
 							timeout["ust"] = Date.now();
-							await createObjectAsync("cableLock", "value", "string");
+							await createObjectAsync("cableLock", "value", "string", true, true);
 							createdStates.push("ust");
+
+							adapter.subscribeStates("cableLock");
 
 							switch (data2["status"][dataKeyToParse]) {
 								case 0:
@@ -531,8 +520,9 @@ class FroniusWattpilot extends utils.Adapter {
 
 						case "cae":
 							timeout["cae"] = Date.now();
-							await createObjectAsync("cae", "value", "boolean");
+							await createObjectAsync("cae", "value", "boolean", true, true);
 							createdStates.push("cae");
+							adapter.subscribeStates("cae");
 							await adapter.setStateAsync("cae", { val: data2["status"][dataKeyToParse], ack: true });
 							break;
 
@@ -545,8 +535,10 @@ class FroniusWattpilot extends utils.Adapter {
 
 						case "lmo":
 							timeout["lmo"] = Date.now();
-							await createObjectAsync("mode", "value", "string");
+							await createObjectAsync("mode", "value", "string", true, true);
 							createdStates.push("lmo");
+
+							adapter.subscribeStates("mode");
 
 							switch (data2["status"][dataKeyToParse]) {
 								case 3:
@@ -636,8 +628,9 @@ class FroniusWattpilot extends utils.Adapter {
 
 						case "amp":
 							timeout["amp"] = Date.now();
-							await createObjectAsync("amps", "value", "number");
-							await createObjectAsync("amp", "value", "number");
+							await createObjectAsync("amp", "value", "number", true, true);
+							createdStates.push("amp");
+							adapter.subscribeStates("amp");
 							await adapter.setStateAsync("amp", { val: data2["status"][dataKeyToParse], ack: true });
 							break;
 
@@ -865,6 +858,111 @@ class FroniusWattpilot extends utils.Adapter {
 					ws.send(JSON.stringify(sendDataToSource));
 				} else {
 					this.log.error("Wrong Value");
+				}
+			} else if (id.includes("amp")) {
+				counter = counter + 1;
+				// @ts-ignore
+				const json = {"type": "setValue", "requestId": counter, "key": "amp", "value": parseInt(state.val)};
+				const tf = createHmac("sha256", hashedPass).update(JSON.stringify(json)).digest("hex");
+				const sendDataToSource = {
+					"type": "securedMsg",
+					"data": JSON.stringify(json),
+					"requestId": counter.toString() + "sm",
+					"hmac": tf.toString()
+				};
+				console.log(sendDataToSource);
+				ws.send(JSON.stringify(sendDataToSource));
+			} else if (id.includes("mode")) {
+				counter = counter + 1;
+				let mode = 0;
+				if (state.val !== null) {
+					if (state.val.toString().toLowerCase().includes("eco")) {
+						mode = 4;
+					}
+					if (state.val.toString().toLowerCase().includes("next trip")) {
+						mode = 5;
+					}
+					if (state.val.toString().toLowerCase().includes("default")) {
+						mode = 3;
+					}
+					if (mode !== 0) {
+						const sendData = {"type": "setValue", "requestId": counter, "key": "lmo", "value": mode};
+						const tf = createHmac("sha256", hashedPass).update(JSON.stringify(sendData)).digest("hex");
+						const sendDataToSource = {
+							"type": "securedMsg",
+							"data": JSON.stringify(sendData),
+							"requestId": counter.toString() + "sm",
+							"hmac": tf.toString()
+						};
+						ws.send(JSON.stringify(sendDataToSource));
+					}
+				}
+			} else if (id.includes("cae")) {
+				counter = counter + 1;
+				let ok = false;
+				if (state.val !== null) {
+					if (typeof state.val === "boolean") {
+						ok = true;
+					}
+					if (ok) {
+						const sendData = {"type": "setValue", "requestId": counter, "key": "cae", "value": state.val};
+						const tf = createHmac("sha256", hashedPass).update(JSON.stringify(sendData)).digest("hex");
+						const sendDataToSource = {
+							"type": "securedMsg",
+							"data": JSON.stringify(sendData),
+							"requestId": counter.toString() + "sm",
+							"hmac": tf.toString()
+						};
+						ws.send(JSON.stringify(sendDataToSource));
+					}
+				}
+			} else if (id.includes("AccessState")) {
+				counter = counter + 1;
+				let mode = 42;
+				if (state.val !== null) {
+					if (state.val.toString().toLowerCase().includes("open")) {
+						mode = 0;
+					}
+					if (state.val.toString().toLowerCase().includes("wait")) {
+						mode = 1;
+					}
+					if (mode !== 42) {
+						const sendData = {"type": "setValue", "requestId": counter, "key": "acs", "value": mode};
+						const tf = createHmac("sha256", hashedPass).update(JSON.stringify(sendData)).digest("hex");
+						const sendDataToSource = {
+							"type": "securedMsg",
+							"data": JSON.stringify(sendData),
+							"requestId": counter.toString() + "sm",
+							"hmac": tf.toString()
+						};
+						console.log(sendDataToSource);
+						ws.send(JSON.stringify(sendDataToSource));
+					}
+				}
+			} else if (id.includes("cableLock")) {
+				counter = counter + 1;
+				let mode = 42;
+				if (state.val !== null) {
+					if (state.val.toString().toLowerCase().includes("normal")) {
+						mode = 0;
+					}
+					if (state.val.toString().toLowerCase().includes("autounlock")) {
+						mode = 1;
+					}
+					if (state.val.toString().toLowerCase().includes("alwayslock")) {
+						mode = 2;
+					}
+					if (mode !== 42) {
+						const sendData = {"type": "setValue", "requestId": counter, "key": "ust", "value": mode};
+						const tf = createHmac("sha256", hashedPass).update(JSON.stringify(sendData)).digest("hex");
+						const sendDataToSource = {
+							"type": "securedMsg",
+							"data": JSON.stringify(sendData),
+							"requestId": counter.toString() + "sm",
+							"hmac": tf.toString()
+						};
+						ws.send(JSON.stringify(sendDataToSource));
+					}
 				}
 			} else if (id.includes("set_power")) {
 				counter = counter + 1;
