@@ -870,7 +870,6 @@ class FroniusWattpilot extends utils.Adapter {
 					"requestId": counter.toString() + "sm",
 					"hmac": tf.toString()
 				};
-				console.log(sendDataToSource);
 				ws.send(JSON.stringify(sendDataToSource));
 			} else if (id.includes("mode")) {
 				counter = counter + 1;
@@ -935,7 +934,6 @@ class FroniusWattpilot extends utils.Adapter {
 							"requestId": counter.toString() + "sm",
 							"hmac": tf.toString()
 						};
-						console.log(sendDataToSource);
 						ws.send(JSON.stringify(sendDataToSource));
 					}
 				}
