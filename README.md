@@ -45,6 +45,16 @@ By default, the adapter only writes the key points of the Wattpilot. If you want
 A documentation of the Datapoints is available here: https://github.com/joscha82/wattpilot/blob/main/API.md (Thanks to joscha82)
 
 ## Set states?
+The most important states you can set directly, these are AccessState, amp, cableLock, cae and mode. 
+
+**AccessState**: "Open" or "Wait"
+
+**amp**: 6-16
+
+**cableLock**: "Normal" or "AutoUnlock" or "AlwaysLock"
+
+**cae**: "true" or "false" (watch out this disables the cloud functionality of your WattPilot may need to restart)
+
 Yes, just write the state name followed by a semicolon and then the value in the set_state state.     
 For example:
 
