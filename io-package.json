@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "fronius-wattpilot",
-    "version": "4.5.1",
+    "version": "4.6.0",
     "news": {
+      "4.6.0": {
+        "en": "Fixed timeout issue in normal parser mode (#36), still exist in dynamic parser mode --> use no timeout (0)\nFixed a number of issues concerning the static parser mode\nQuality of life improvements --> you can now set the common states directly! (set_power, set_mode) are still available for compatibility reasons and for the dynamic parser mode",
+        "de": "Feste Timeout-Ausgabe im normalen Parser-Modus #(36), gibt es noch im dynamischen Parser-Modus --> keine Timeout (0)\nBehoben mehrere Probleme im statischen Parser-Modus\nQualität der Lebensverbesserungen --> Sie können jetzt die gemeinsamen Staaten direkt einstellen! (set_power, set_mode) sind noch aus Kompatibilitätsgründen und für den dynamischen Parser-Modus verfügbar",
+        "ru": "Исправлена проблема тайм-аут в нормальном парсерском режиме #(36), все еще существует в динамическом парсерском режиме --> не используйте timeout (0)\nИсправлен ряд вопросов относительно статического парсерского режима\nКачество улучшений жизни --> вы можете теперь установить общие состояния сразу! (set_power, set_mode) все еще доступны по соображениям совместимости и для динамического режима парсера",
+        "pt": "Problema de tempo limite fixo no modo de parser normal #(36), ainda existe no modo de parser dinâmico --> não use tempoout (0)\nCorrigido um número de questões relativas ao modo de parser estático\nMelhorias de qualidade de vida --> você agora pode definir os estados comuns diretamente! (set_power, set_mode) ainda estão disponíveis por razões de compatibilidade e pelo modo de parser dinâmico",
+        "nl": "Quality over Quantity (QoQ) Releases Vertaling:\nEen aantal problemen met de statische parochie\nQuality of life verbetering -- Je kunt nu de gemeenschappelijke staten rechtzetten! (setpower, zet ) zijn nog steeds beschikbaar voor compatibiliteit redenen en voor de dynamische parser mode",
+        "fr": "Problème de timeout fixe en mode parser normal #(36), existe toujours en mode parser dynamique -- Cancer n'utilise pas de timeout (0)\nCorrection d'un certain nombre de questions concernant le mode de parseur statique\nAmélioration de la qualité de vie -- Cancer vous pouvez maintenant définir les états communs directement! (set_power, set_mode) sont toujours disponibles pour des raisons de compatibilité et pour le mode de parser dynamique",
+        "it": "Emissione di timeout fissa in modalità parser normale #(36), esiste ancora in modalità parser dinamica --> non utilizzare timeout (0)\nRisolto un certo numero di problemi relativi alla modalità parser statico\nQualità dei miglioramenti della vita --> ora è possibile impostare gli stati comuni direttamente! (set_power, set_mode) sono ancora disponibili per motivi di compatibilità e per la modalità di parser dinamica",
+        "es": "Número de tiempo fijo en el modo de parser normal #(36), todavía existen en el modo de parser dinámico -- usuario no use timeout (0)\nArreglado una serie de cuestiones relativas al modo de parser estático\nCalidad de las mejoras de la vida -- usuario ahora puede establecer los estados comunes directamente! (set_power, set_mode) todavía están disponibles por razones de compatibilidad y para el modo de parser dinámico",
+        "pl": "Kwestia czasoprzestrzeni w normalnym trybie parser #(36), wciąż istnieje w dynamicznym trybie parser – > nie używa czasu (0)\nZmieniło wiele problemów dotyczących trybu statycznego parsera\nJakość ulepszeń życia – -> Możesz teraz założyć stany powszechne. (set_power, set_mode) są nadal dostępne z powodów kompatybilności i dynamicznego trybu parsera",
+        "uk": "Виправлено випуск часу в режимі нормального парсера #(36), як і раніше існують в режимі динамічного парсера --> використовувати без часу (0)\nВиправлено ряд питань щодо статичного режиму парсера\nЯкість поліпшення життя --> ви можете встановити загальні стани прямо! (set_power, set_mode) все ще доступні для причин сумісності і для динамічного режиму parser",
+        "zh-cn": "正常包装形式(36)中固定的时间问题仍然存在于动态的序号—— 未使用(0)\n确定与静态投机方式有关的若干问题\n改善生活质量——你现在可以直接建立共同国家! (集群:能力,成套,因兼容和动态配件模式而仍然可用。)"
+      },
       "4.5.1": {
         "en": "Fixed issue #29 (custom states not working)",
         "de": "Fixed Ausgabe #29 (Kundenstaaten nicht arbeiten)",
@@ -80,19 +93,6 @@
         "pl": "Niektóre poprawy QoL",
         "uk": "Деякі покращення QoL",
         "zh-cn": "B. 改进"
-      },
-      "4.1.0": {
-        "en": "Added the possibility to add states manually via the instance-settings\nFixed the bug where the adapter didn't set the correct value types\nAdded some quality of life improvements",
-        "de": "Hinzufügen der Möglichkeit, Zustände manuell über die Instanzeinstellungen hinzuzufügen\nFehler behoben, bei dem der Adapter die richtigen Wertetypen nicht eingestellt hat\nHinzugefügt einige Qualität der Lebensverbesserungen",
-        "ru": "Добавлена возможность добавления штатов вручную через инструкцию\nИсправлена ошибка, где адаптер не установил правильные типы значения\nДобавлены некоторые улучшения качества жизни",
-        "pt": "Adicionado a possibilidade de adicionar estados manualmente através das configurações de instância\nCorrigido o bug onde o adaptador não definiu os tipos de valor corretos\nAdicionado alguns qualidade de melhorias de vida",
-        "nl": "Voeg de mogelijkheid toe om de staat handmatig toe te voegen via de instance-setting\nDe insect waar de adapter de juiste waardestypes niet plaatste\nVoegde een aantal levensverbeteringen toe",
-        "fr": "Ajout de la possibilité d'ajouter manuellement des états via les paramètres d'instance\nCorrection du bug où l'adaptateur n'a pas défini les types de valeur correctes\nAjout de quelques améliorations de qualité de vie",
-        "it": "Aggiunta la possibilità di aggiungere gli stati manualmente tramite le impostazioni delle istanze\nRisolto il bug in cui l'adattatore non ha impostato i tipi di valore corretti\nAggiunto alcune qualità di vita miglioramenti",
-        "es": "Agregó la posibilidad de añadir estados manualmente a través de los puntos de instancia\nArregla el fallo donde el adaptador no fijó los tipos de valor correctos\nAñadido cierta calidad de las mejoras de la vida",
-        "pl": "Dodać możliwość dodania stanów ręcznie poprzez ustawienie instancji\nBłękitne błędy, w których adapter nie ustawił prawidłowych typów wartości\nDostarczanie pewnej jakości życia",
-        "uk": "Додана можливість додавати стани вручну за допомогою параметра\nВиправлено помилку, де перехідник не встановлює правильне значення\nДодана якість поліпшення життя",
-        "zh-cn": "增加通过制定示范办法故意增加国家的可能性\n确定适应者确定的正确价值类型\n提高生活质量"
       }
     },
     "title": "Fronius Wattpilot",
