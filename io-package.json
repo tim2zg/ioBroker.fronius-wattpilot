@@ -95,7 +95,6 @@
         "zh-cn": "B. 改进"
       }
     },
-    "title": "Fronius Wattpilot",
     "titleLang": {
       "en": "Fronius Wattpilot",
       "de": "Fronius Wattpilot",
@@ -144,7 +143,17 @@
     "compact": true,
     "connectionType": "local",
     "dataSource": "poll",
-    "materialize": true
+    "materialize": true,
+    "globalDependencies": [
+      {
+        "admin": ">4.0.9"
+      }
+    ],
+    "dependencies": [
+      {
+        "js-controller": ">=3"
+      }
+    ]
   },
   "native": {
     "ip-host": "IP-Address des WattPilots",
