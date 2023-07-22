@@ -105,20 +105,22 @@
       "fr": "Fronius Wattpilot",
       "it": "Fronius Wattpilot",
       "es": "Fronius Wattpilot",
-      "pl": "Fronius Wattpilot",
-      "zh-cn": "Fronius Wattpilot"
+      "pl": "Fronius Wattpilot (ang.)",
+      "uk": "Фроній Ватпілот",
+      "zh-cn": "Fronius Wattot"
     },
     "desc": {
-      "en": "fronius-wattpilot",
-      "de": "fronius-wattpilot",
-      "ru": "Фрониус-ваттпилот",
-      "pt": "fronius-wattpilot",
-      "nl": "Fronius Wattpilot",
-      "fr": "fronius-wattpilot",
-      "it": "fronius-wattpilot",
-      "es": "Fronius-wattpilot",
-      "pl": "fronius-wattpilot",
-      "zh-cn": "fronius-wattpilot"
+      "en": "A adapter to read and write states from and to the Fronius wattpilot",
+      "de": "Ein Adapter zum Lesen und Schreiben von und zum Fronius Wattpilot",
+      "ru": "Адаптер для чтения и записи штатов от и до Фрониус Ваттпилот",
+      "pt": "Um adaptador para ler e escrever estados de e para o Fronius wattpilot",
+      "nl": "Een adapter om te lezen en staat te schrijven van de Fronius Wattpilot",
+      "fr": "Un adaptateur pour lire et écrire les états de et vers le Wattpilot Fronius",
+      "it": "Un adattatore per leggere e scrivere stati da e per il pilota di watt Fronius",
+      "es": "Un adaptador para leer y escribir estados desde y hacia el Fronius watpilot",
+      "pl": "Adaptator do czytania i pisania stanów od i do Fronius wattpilot",
+      "uk": "Перехідник для зчитування та запису станів з Фроніуса ватпілота",
+      "zh-cn": "A. 适应者从Fronius 支柱处阅读和写信"
     },
     "authors": [
       "tim2zg <tim2zg@protonmail.com>",
