@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "fronius-wattpilot",
-    "version": "4.6.0",
+    "version": "4.6.1",
     "news": {
+      "4.6.1": {
+        "en": "Fixed Issue #39 (set_state not working)",
+        "de": "Fixed Issue #39 (set_state not working)",
+        "ru": "Фиксированный номер #39 (set_state не работает)",
+        "pt": "Problema fixo #39 (set_state não funciona)",
+        "nl": "Gerepareerd Issue 39 (setstate niet werken)",
+        "fr": "Correction #39 (set_state not working)",
+        "it": "Problema fisso #39 (set_state non funzionante)",
+        "es": "Edición fija #39 (set_state no funciona)",
+        "pl": "Numer #39 (set_state not working)",
+        "uk": "Виправлено проблему #39 (set_state не працює)",
+        "zh-cn": "九. 固定问题编号:国家不工作"
+      },
       "4.6.0": {
         "en": "Fixed timeout issue in normal parser mode (#36), still exist in dynamic parser mode --> use no timeout (0)\nFixed a number of issues concerning the static parser mode\nQuality of life improvements --> you can now set the common states directly! (set_power, set_mode) are still available for compatibility reasons and for the dynamic parser mode",
         "de": "Feste Timeout-Ausgabe im normalen Parser-Modus #(36), gibt es noch im dynamischen Parser-Modus --> keine Timeout (0)\nBehoben mehrere Probleme im statischen Parser-Modus\nQualität der Lebensverbesserungen --> Sie können jetzt die gemeinsamen Staaten direkt einstellen! (set_power, set_mode) sind noch aus Kompatibilitätsgründen und für den dynamischen Parser-Modus verfügbar",
@@ -80,19 +93,6 @@
         "pl": "Fixed bug w trybie wszystkich wartości / parser",
         "uk": "Виправлена помилка в всіх значеннях режим / parser",
         "zh-cn": "在所有价值观模式中都配有泡沫。"
-      },
-      "4.2.0": {
-        "en": "Some QoL improvements",
-        "de": "Einige QoL Verbesserungen",
-        "ru": "Некоторые улучшения QoL",
-        "pt": "Algumas melhorias de QoL",
-        "nl": "Wat QoL verbetering",
-        "fr": "Quelques améliorations QoL",
-        "it": "Alcuni miglioramenti QoL",
-        "es": "Algunas mejoras de QoL",
-        "pl": "Niektóre poprawy QoL",
-        "uk": "Деякі покращення QoL",
-        "zh-cn": "B. 改进"
       }
     },
     "titleLang": {
