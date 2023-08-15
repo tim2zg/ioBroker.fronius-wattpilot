@@ -184,22 +184,55 @@ class FroniusWattpilot extends utils.Adapter {
 								timeout["err"] = Date.now();
 								switch (data2["status"][dataKeyToParse]) {
 									case 0:
-										await adapter.setStateAsync("errorState", { val: "Unknown Error", ack: true });
+										await adapter.setStateAsync("errorState", { val: "None", ack: true });
 										break;
 									case 1:
-										await adapter.setStateAsync("errorState", { val: "Idle", ack: true });
+										await adapter.setStateAsync("errorState", { val: "FiAc", ack: true });
 										break;
 									case 2:
-										await adapter.setStateAsync("errorState", { val: "Charging", ack: true });
+										await adapter.setStateAsync("errorState", { val: "FiDc", ack: true });
 										break;
 									case 3:
-										await adapter.setStateAsync("errorState", { val: "Wait Car", ack: true });
+										await adapter.setStateAsync("errorState", { val: "Phase", ack: true });
 										break;
 									case 4:
-										await adapter.setStateAsync("errorState", { val: "Complete", ack: true });
+										await adapter.setStateAsync("errorState", { val: "Overvolt", ack: true });
 										break;
 									case 5:
-										await adapter.setStateAsync("errorState", { val: "Error", ack: true });
+										await adapter.setStateAsync("errorState", { val: "Overamp", ack: true });
+										break;
+									case 6:
+										await adapter.setStateAsync("errorState", { val: "Diode", ack: true });
+										break;
+									case 7:
+										await adapter.setStateAsync("errorState", { val: "PpInvalid", ack: true });
+										break;
+									case 8:
+										await adapter.setStateAsync("errorState", { val: "GndInvalid", ack: true });
+										break;
+									case 9:
+										await adapter.setStateAsync("errorState", { val: "ContactorStuck", ack: true });
+										break;
+									case 10:
+										await adapter.setStateAsync("errorState", { val: "ContactorMiss", ack: true });
+										break;
+									case 11:
+										await adapter.setStateAsync("errorState", { val: "FiUnknown", ack: true });
+										break;
+									case 12:
+										await adapter.setStateAsync("errorState", { val: "Unknown", ack: true });
+										break;
+									case 13:
+										await adapter.setStateAsync("errorState", { val: "Overtemp", ack: true });
+										break;
+									case 14:
+										await adapter.setStateAsync("errorState", { val: "NoComm", ack: true });
+										break;
+									case 15:
+										await adapter.setStateAsync("errorState", { val: "StatusLockStuckOpen", ack: true });
+										break;
+									case 16:
+										await adapter.setStateAsync("errorState", { val: "StatusLockStuckLocked", ack: true });
 										break;
 								}
 							}
@@ -258,17 +291,23 @@ class FroniusWattpilot extends utils.Adapter {
 							if (timeout["car"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
 								timeout["car"] = Date.now();
 								switch (data2["status"][dataKeyToParse]) {
+									case 0:
+										await adapter.setStateAsync("carConnected", { val: "Unknown/Error", ack: true });
+										break;
 									case 1:
-										await adapter.setStateAsync("carConnected", { val: "no car", ack: true });
+										await adapter.setStateAsync("carConnected", { val: "Idle", ack: true });
 										break;
 									case 2:
-										await adapter.setStateAsync("carConnected", { val: "charging", ack: true });
+										await adapter.setStateAsync("carConnected", { val: "Charging", ack: true });
 										break;
 									case 3:
-										await adapter.setStateAsync("carConnected", { val: "ready", ack: true });
+										await adapter.setStateAsync("carConnected", { val: "WaitCar", ack: true });
 										break;
 									case 4:
-										await adapter.setStateAsync("carConnected", { val: "complete", ack: true });
+										await adapter.setStateAsync("carConnected", { val: "Complete", ack: true });
+										break;
+									case 5:
+										await adapter.setStateAsync("carConnected", { val: "Error", ack: true });
 										break;
 								}
 							}
@@ -316,7 +355,7 @@ class FroniusWattpilot extends utils.Adapter {
 									val: data2["status"][dataKeyToParse][6],
 									ack: true
 								});
-								await adapter.setStateAsync("power2", {
+								await adapter.setStateAsync("power1", {
 									val: data2["status"][dataKeyToParse][7] * 0.001,
 									ack: true
 								});
@@ -402,7 +441,7 @@ class FroniusWattpilot extends utils.Adapter {
 								await adapter.setStateAsync("PVUselessPower", { val: data2["status"][dataKeyToParse], ack: true });
 							}
 							break;
-							// No State to parse found for this key, check if user wants this state
+						// No State to parse found for this key, check if user wants this state
 						default:
 							await checkCustomAddedParameters(dataKeyToParse, data2["status"][dataKeyToParse]);
 							if (!useNormalParser) {
@@ -470,22 +509,55 @@ class FroniusWattpilot extends utils.Adapter {
 
 							switch (data2["status"][dataKeyToParse]) {
 								case 0:
-									await adapter.setStateAsync("errorState", { val: "Unknown Error", ack: true });
+									await adapter.setStateAsync("errorState", { val: "None", ack: true });
 									break;
 								case 1:
-									await adapter.setStateAsync("errorState", { val: "Idle", ack: true });
+									await adapter.setStateAsync("errorState", { val: "FiAc", ack: true });
 									break;
 								case 2:
-									await adapter.setStateAsync("errorState", { val: "Charging", ack: true });
+									await adapter.setStateAsync("errorState", { val: "FiDc", ack: true });
 									break;
 								case 3:
-									await adapter.setStateAsync("errorState", { val: "Wait Car", ack: true });
+									await adapter.setStateAsync("errorState", { val: "Phase", ack: true });
 									break;
 								case 4:
-									await adapter.setStateAsync("errorState", { val: "Complete", ack: true });
+									await adapter.setStateAsync("errorState", { val: "Overvolt", ack: true });
 									break;
 								case 5:
-									await adapter.setStateAsync("errorState", { val: "Error", ack: true });
+									await adapter.setStateAsync("errorState", { val: "Overamp", ack: true });
+									break;
+								case 6:
+									await adapter.setStateAsync("errorState", { val: "Diode", ack: true });
+									break;
+								case 7:
+									await adapter.setStateAsync("errorState", { val: "PpInvalid", ack: true });
+									break;
+								case 8:
+									await adapter.setStateAsync("errorState", { val: "GndInvalid", ack: true });
+									break;
+								case 9:
+									await adapter.setStateAsync("errorState", { val: "ContactorStuck", ack: true });
+									break;
+								case 10:
+									await adapter.setStateAsync("errorState", { val: "ContactorMiss", ack: true });
+									break;
+								case 11:
+									await adapter.setStateAsync("errorState", { val: "FiUnknown", ack: true });
+									break;
+								case 12:
+									await adapter.setStateAsync("errorState", { val: "Unknown", ack: true });
+									break;
+								case 13:
+									await adapter.setStateAsync("errorState", { val: "Overtemp", ack: true });
+									break;
+								case 14:
+									await adapter.setStateAsync("errorState", { val: "NoComm", ack: true });
+									break;
+								case 15:
+									await adapter.setStateAsync("errorState", { val: "StatusLockStuckOpen", ack: true });
+									break;
+								case 16:
+									await adapter.setStateAsync("errorState", { val: "StatusLockStuckLocked", ack: true });
 									break;
 							}
 							break;
@@ -536,8 +608,7 @@ class FroniusWattpilot extends utils.Adapter {
 							timeout["lmo"] = Date.now();
 							await createObjectAsync("mode", "value", "string", true, true);
 							createdStates.push("lmo");
-
-							adapter.subscribeStates("mode");
+							adapter.subscribeStates("lmo");
 
 							switch (data2["status"][dataKeyToParse]) {
 								case 3:
@@ -556,19 +627,24 @@ class FroniusWattpilot extends utils.Adapter {
 							timeout["car"] = Date.now();
 							await createObjectAsync("carConnected", "value", "string");
 							createdStates.push("car");
-
 							switch (data2["status"][dataKeyToParse]) {
+								case 0:
+									await adapter.setStateAsync("carConnected", { val: "Unknown/Error", ack: true });
+									break;
 								case 1:
-									await adapter.setStateAsync("carConnected", { val: "no car", ack: true });
+									await adapter.setStateAsync("carConnected", { val: "Idle", ack: true });
 									break;
 								case 2:
-									await adapter.setStateAsync("carConnected", { val: "charging", ack: true });
+									await adapter.setStateAsync("carConnected", { val: "Charging", ack: true });
 									break;
 								case 3:
-									await adapter.setStateAsync("carConnected", { val: "ready", ack: true });
+									await adapter.setStateAsync("carConnected", { val: "WaitCar", ack: true });
 									break;
 								case 4:
-									await adapter.setStateAsync("carConnected", { val: "complete", ack: true });
+									await adapter.setStateAsync("carConnected", { val: "Complete", ack: true });
+									break;
+								case 5:
+									await adapter.setStateAsync("carConnected", { val: "Error", ack: true });
 									break;
 							}
 							break;
@@ -695,7 +771,7 @@ class FroniusWattpilot extends utils.Adapter {
 							await adapter.setStateAsync("PVUselessPower", { val: data2["status"][dataKeyToParse], ack: true });
 							break;
 
-							// No data-key found
+						// No data-key found
 						default:
 							await checkCustomAddedParameters(dataKeyToParse, data2["status"][dataKeyToParse]);
 							if (!useNormalParser) {
