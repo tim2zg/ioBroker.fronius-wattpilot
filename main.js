@@ -292,19 +292,19 @@ class FroniusWattpilot extends utils.Adapter {
 								timeout["car"] = Date.now();
 								switch (data2["status"][dataKeyToParse]) {
 									case 0:
-										await adapter.setStateAsync("carConnected", { val: "Unknown,Error", ack: true });
+										await adapter.setStateAsync("carConnected", { val: "Unknown/Error", ack: true });
 										break;
 									case 1:
-										await adapter.setStateAsync("carConnected", { val: "no car", ack: true });
+										await adapter.setStateAsync("carConnected", { val: "Idle", ack: true });
 										break;
 									case 2:
-										await adapter.setStateAsync("carConnected", { val: "charging", ack: true });
+										await adapter.setStateAsync("carConnected", { val: "Charging", ack: true });
 										break;
 									case 3:
-										await adapter.setStateAsync("carConnected", { val: "ready", ack: true });
+										await adapter.setStateAsync("carConnected", { val: "WaitCar", ack: true });
 										break;
 									case 4:
-										await adapter.setStateAsync("carConnected", { val: "complete", ack: true });
+										await adapter.setStateAsync("carConnected", { val: "Complete", ack: true });
 										break;
 									case 5:
 										await adapter.setStateAsync("carConnected", { val: "Error", ack: true });
@@ -608,7 +608,6 @@ class FroniusWattpilot extends utils.Adapter {
 							timeout["lmo"] = Date.now();
 							await createObjectAsync("mode", "value", "string", true, true);
 							createdStates.push("lmo");
-
 							adapter.subscribeStates("lmo");
 
 							switch (data2["status"][dataKeyToParse]) {
@@ -628,22 +627,21 @@ class FroniusWattpilot extends utils.Adapter {
 							timeout["car"] = Date.now();
 							await createObjectAsync("carConnected", "value", "string");
 							createdStates.push("car");
-
 							switch (data2["status"][dataKeyToParse]) {
 								case 0:
-									await adapter.setStateAsync("carConnected", { val: "Unknown,Error", ack: true });
+									await adapter.setStateAsync("carConnected", { val: "Unknown/Error", ack: true });
 									break;
 								case 1:
-									await adapter.setStateAsync("carConnected", { val: "no car", ack: true });
+									await adapter.setStateAsync("carConnected", { val: "Idle", ack: true });
 									break;
 								case 2:
-									await adapter.setStateAsync("carConnected", { val: "charging", ack: true });
+									await adapter.setStateAsync("carConnected", { val: "Charging", ack: true });
 									break;
 								case 3:
-									await adapter.setStateAsync("carConnected", { val: "ready", ack: true });
+									await adapter.setStateAsync("carConnected", { val: "WaitCar", ack: true });
 									break;
 								case 4:
-									await adapter.setStateAsync("carConnected", { val: "complete", ack: true });
+									await adapter.setStateAsync("carConnected", { val: "Complete", ack: true });
 									break;
 								case 5:
 									await adapter.setStateAsync("carConnected", { val: "Error", ack: true });
