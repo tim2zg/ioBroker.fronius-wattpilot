@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "fronius-wattpilot",
-    "version": "4.6.1",
+    "version": "4.6.2",
     "news": {
+      "4.6.2": {
+        "en": "Thanks to Norb1204 for fixing a few bugs that I missed. More in Issue #40",
+        "de": "Dank Norb1204 für die Befestigung ein paar Fehler, die ich verpasst. Mehr in Ausgabe #40",
+        "ru": "Спасибо Norb1204 за исправление нескольких ошибок, которые я пропустил. Подробнее в выпуске #40",
+        "pt": "Graças a Norb1204 para corrigir alguns bugs que eu perdi. Mais na edição #40",
+        "nl": "Dankzij Norb1204 voor het repareren van een paar insecten die ik gemist heb. Meer in Issue #40",
+        "fr": "Merci à Norb1204 pour avoir corrigé quelques bugs que j'ai ratés. Plus en édition #40",
+        "it": "Grazie a Norb1204 per aver risolto alcuni bug che ho perso. Altro in Numero 40",
+        "es": "Gracias a Norb1204 por arreglar algunos errores que perdí. Más en Edición #40",
+        "pl": "Dzięki Norb1204 za naprawę kilku błędów. W: #40",
+        "uk": "Завдяки Norb1204 для фіксації декількох помилок, які я пропустив. Детальніше про випуск #40",
+        "zh-cn": "由于诺卜1204年,我错过了几块黑暗。 第40号 章"
+      },
       "4.6.1": {
         "en": "Fixed Issue #39 (set_state not working)",
         "de": "Fixed Issue #39 (set_state not working)",
@@ -80,19 +93,6 @@
         "pl": "aktualizacja\naktualizacja stanu",
         "uk": "оновлення залежності\nоновлення стану",
         "zh-cn": "依赖性最新资料\n国家最新资料"
-      },
-      "4.2.1": {
-        "en": "Fixed bug in the all values mode / parser",
-        "de": "Fehler behoben in allen Werten Modus / Parser",
-        "ru": "Исправлена ошибка в режиме всех значений / parser",
-        "pt": "Corrigido o erro no modo de todos os valores / parser",
-        "nl": "Gerepareerde insect in alle waarden gemoduseerd/ parser",
-        "fr": "Correction de bug dans le mode toutes les valeurs / parser",
-        "it": "Corretto bug nella modalità tutti i valori / parser",
-        "es": "Error fijo en el modo de todos los valores / parser",
-        "pl": "Fixed bug w trybie wszystkich wartości / parser",
-        "uk": "Виправлена помилка в всіх значеннях режим / parser",
-        "zh-cn": "在所有价值观模式中都配有泡沫。"
       }
     },
     "titleLang": {
