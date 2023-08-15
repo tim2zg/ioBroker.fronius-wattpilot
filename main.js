@@ -93,7 +93,6 @@ class FroniusWattpilot extends utils.Adapter {
 				}
 
 				if (messageData["type"] === "response") {
-					console.log(messageData);
 					if (messageData["success"]) {
 						if (messageData["status"]["amp"] !== undefined) {
 							adapter.setState("set_power", messageData["status"]["amp"], true);
@@ -871,32 +870,7 @@ class FroniusWattpilot extends utils.Adapter {
 					"hmac": tf.toString()
 				};
 				ws.send(JSON.stringify(sendDataToSource));
-			} else if (id.includes("mode")) {
-				counter = counter + 1;
-				let mode = 0;
-				if (state.val !== null) {
-					if (state.val.toString().toLowerCase().includes("eco")) {
-						mode = 4;
-					}
-					if (state.val.toString().toLowerCase().includes("next trip")) {
-						mode = 5;
-					}
-					if (state.val.toString().toLowerCase().includes("default")) {
-						mode = 3;
-					}
-					if (mode !== 0) {
-						const sendData = {"type": "setValue", "requestId": counter, "key": "lmo", "value": mode};
-						const tf = createHmac("sha256", hashedPass).update(JSON.stringify(sendData)).digest("hex");
-						const sendDataToSource = {
-							"type": "securedMsg",
-							"data": JSON.stringify(sendData),
-							"requestId": counter.toString() + "sm",
-							"hmac": tf.toString()
-						};
-						ws.send(JSON.stringify(sendDataToSource));
-					}
-				}
-			} else if (id.includes("cae")) {
+			}  else if (id.includes("cae")) {
 				counter = counter + 1;
 				let ok = false;
 				if (state.val !== null) {
@@ -987,6 +961,31 @@ class FroniusWattpilot extends utils.Adapter {
 					"hmac": tf.toString()
 				};
 				ws.send(JSON.stringify(sendDataToSource));
+			} else if (id.includes("mode")) {
+				counter = counter + 1;
+				let mode = 0;
+				if (state.val !== null) {
+					if (state.val.toString().toLowerCase().includes("eco")) {
+						mode = 4;
+					}
+					if (state.val.toString().toLowerCase().includes("next trip")) {
+						mode = 5;
+					}
+					if (state.val.toString().toLowerCase().includes("default")) {
+						mode = 3;
+					}
+					if (mode !== 0) {
+						const sendData = {"type": "setValue", "requestId": counter, "key": "lmo", "value": mode};
+						const tf = createHmac("sha256", hashedPass).update(JSON.stringify(sendData)).digest("hex");
+						const sendDataToSource = {
+							"type": "securedMsg",
+							"data": JSON.stringify(sendData),
+							"requestId": counter.toString() + "sm",
+							"hmac": tf.toString()
+						};
+						ws.send(JSON.stringify(sendDataToSource));
+					}
+				}
 			}
 		}
 	}
