@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "fronius-wattpilot",
-    "version": "4.6.2",
+    "version": "4.6.3",
     "news": {
+      "4.6.3": {
+        "en": "Fixed a bug where the adapter would use a undefined variable\nFixed bug #44\nFixed bug #43",
+        "de": "Fehler behoben, bei dem der Adapter eine undefinierte Variable verwenden würde\nFehler behoben #44\nFehler behoben #43",
+        "ru": "Исправлена ошибка, где адаптер будет использовать неопределенную переменную\nИсправлена ошибка #44\nИсправлена ошибка #43",
+        "pt": "Corrigido um bug onde o adaptador usaria uma variável indefinida\nCorrigido o erro #44\nCorrigido o erro #43",
+        "nl": "Een insect waar de ontvoerder een onbepaalde variabele\nQuality over Quantity (QoQ) Releases Vertaling:\nQuality over Quantity (QoQ) Releases Vertaling:",
+        "fr": "Correction d'un bug où l'adaptateur utiliserait une variable undefined\nCorrection du bug #44\nCorrection du bug #43",
+        "it": "Risolto un bug in cui l'adattatore avrebbe usato una variabile non definita\nCorretto bug #44\nCorretto bug #43",
+        "es": "Arreglado un fallo donde el adaptador utilizaría una variable indefinida\nError fijo #44\nError fijo #43",
+        "pl": "Błękitnym błędem, w którym adapter użył nie określonej zmiennej\nFixed bug #44 (ang.)\nFixed bug #43 (ang.)",
+        "uk": "Виправлено помилку, де адаптер використовуватиме не визначену змінну\nВиправлена помилка #44\nВиправлена помилка #43",
+        "zh-cn": "确定一个配制,使适应者使用一个未界定的变量。\n九. 固定的乙ug #44\n九、导 言.. 43"
+      },
       "4.6.2": {
         "en": "Thanks to Norb1204 for fixing a few bugs that I missed. More in Issue #40",
         "de": "Dank Norb1204 für die Befestigung ein paar Fehler, die ich verpasst. Mehr in Ausgabe #40",
@@ -80,19 +93,6 @@
         "pl": "obecnie znane stany mogą być aktualizowane, nawet jeśli parser dynamiczny może być użyty",
         "uk": "відомі стани тепер будуть оновлені навіть якщо ввімкнено динамічний аналіз",
         "zh-cn": "已知国家现在将得到更新,即使有活力的序号得以更新。"
-      },
-      "4.3.0": {
-        "en": "dependency updates\nstate updates",
-        "de": "abhängigkeitsaktualisierung\nzustandsänderungen",
-        "ru": "обновления зависимости\nгосударственные обновления",
-        "pt": "atualizações de dependência\natualizações do estado",
-        "nl": "afhankelijke updates\nvertaling:",
-        "fr": "mises à jour de la dépendance\nmises à jour de l ' état",
-        "it": "aggiornamenti di dipendenza\naggiornamenti di stato",
-        "es": "actualizaciones de la dependencia\nactualizaciones estatales",
-        "pl": "aktualizacja\naktualizacja stanu",
-        "uk": "оновлення залежності\nоновлення стану",
-        "zh-cn": "依赖性最新资料\n国家最新资料"
       }
     },
     "titleLang": {

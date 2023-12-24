@@ -75,7 +75,7 @@ Thanks to joscha82 we know: https://github.com/joscha82/wattpilot/blob/main/API.
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 4.6.3 (2023-12-24)
 - Fixed a bug where the adapter would use a undefined variable
 - Fixed bug #44
 - Fixed bug #43
