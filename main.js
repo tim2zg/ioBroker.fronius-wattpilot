@@ -44,7 +44,7 @@ class FroniusWattpilot extends utils.Adapter {
 		}
 
 		if (this.config["cloud"]) {
-			hostToConnect = "ws://app.wattpilot.io/app/" + this.config["serial-number"] + "?version=1.2.9";
+			hostToConnect = "wss://app.wattpilot.io/app/" + this.config["serial-number"] + "?version=1.2.9";
 		} else {
 			hostToConnect = "ws://" + this.config["ip-host"] + "/ws";
 		}
@@ -316,11 +316,7 @@ class FroniusWattpilot extends utils.Adapter {
 						case "alw":
 							if (timeout["alw"] + (1000 * freq) < Date.now()) { // Handel Delta Message and store them
 								timeout["alw"] = Date.now();
-								if (data2["status"][dataKeyToParse] === 0) {
-									await adapter.setStateAsync("AllowCharging", { val: false, ack: true });
-								} else if (data2["status"][dataKeyToParse] === 1) {
-									await adapter.setStateAsync("AllowCharging", { val: true, ack: true });
-								}
+								await adapter.setStateAsync("AllowCharging", { val: data2["status"][dataKeyToParse], ack: true });
 							}
 							break;
 
@@ -654,11 +650,7 @@ class FroniusWattpilot extends utils.Adapter {
 							await createObjectAsync("AllowCharging", "value", "boolean");
 							createdStates.push("alw");
 
-							if (data2["status"][dataKeyToParse] === 0) {
-								await adapter.setStateAsync("AllowCharging", { val: false, ack: true });
-							} else if (data2["status"][dataKeyToParse] === 1) {
-								await adapter.setStateAsync("AllowCharging", { val: true, ack: true });
-							}
+							await adapter.setStateAsync("AllowCharging", { val: data2["status"][dataKeyToParse], ack: true });
 							break;
 
 						case "nrg":
@@ -892,174 +884,189 @@ class FroniusWattpilot extends utils.Adapter {
 					this.log.error("Wrong Value");
 				}
 				if (state.val) {
-					// @ts-ignore
-					if (!state.val.includes(";")) {
-						this.log.error("Wrong Value");
-						return;
+					if (hashedPass !== undefined) {
+						// @ts-ignore
+						if (!state.val.includes(";")) {
+							this.log.error("Wrong Value");
+							return;
+						}
+						stateValue = state.val.toString().split(";");
+						let sendData = {};
+						if (stateValue[1] === "true") {
+							sendData = {
+								"type": "setValue",
+								"requestId": counter,
+								"key": stateValue[0],
+								"value": true
+							};
+						} else if (stateValue[1] === "false") {
+							sendData = {
+								"type": "setValue",
+								"requestId": counter,
+								"key": stateValue[0],
+								"value": false
+							};
+						} else { // should also be checked against floats and stings, but I currently don't know how to do it
+							sendData = {
+								"type": "setValue",
+								"requestId": counter,
+								"key": stateValue[0],
+								"value": parseInt(stateValue[1])
+							};
+						}
+						// @ts-ignore
+						const data = JSON.stringify(sendData);
+						const tf = createHmac("sha256", hashedPass).update(data).digest("hex");
+						const sendDataToSource = {
+							"type": "securedMsg",
+							"data": data,
+							"requestId": counter.toString() + "sm",
+							"hmac": tf
+						};
+						ws.send(JSON.stringify(sendDataToSource));
 					}
-					stateValue = state.val.toString().split(";");
-					let sendData = {};
-					if (stateValue[1] === "true") {
-						sendData = {
-							"type": "setValue",
-							"requestId": counter,
-							"key": stateValue[0],
-							"value": true
-						};
-					} else if (stateValue[1] === "false") {
-						sendData = {
-							"type": "setValue",
-							"requestId": counter,
-							"key": stateValue[0],
-							"value": false
-						};
-					} else { // should also be checked against floats and stings, but I currently don't know how to do it
-						sendData = {
-							"type": "setValue",
-							"requestId": counter,
-							"key": stateValue[0],
-							"value": parseInt(stateValue[1])
-						};
-					}
-					// @ts-ignore
-					const data = JSON.stringify(sendData);
-					const tf = createHmac("sha256", hashedPass).update(data).digest("hex");
-					const sendDataToSource = {
-						"type": "securedMsg",
-						"data": data,
-						"requestId": counter.toString() + "sm",
-						"hmac": tf
-					};
-					ws.send(JSON.stringify(sendDataToSource));
 				} else {
 					this.log.error("Wrong Value");
 				}
 			} else if (id.includes("amp")) {
-				counter = counter + 1;
-				// @ts-ignore
-				const json = {"type": "setValue", "requestId": counter, "key": "amp", "value": parseInt(state.val)};
-				const tf = createHmac("sha256", hashedPass).update(JSON.stringify(json)).digest("hex");
-				const sendDataToSource = {
-					"type": "securedMsg",
-					"data": JSON.stringify(json),
-					"requestId": counter.toString() + "sm",
-					"hmac": tf.toString()
-				};
-				ws.send(JSON.stringify(sendDataToSource));
+				if (hashedPass !== undefined) {
+					counter = counter + 1;
+					// @ts-ignore
+					const json = {"type": "setValue", "requestId": counter, "key": "amp", "value": parseInt(state.val)};
+					const tf = createHmac("sha256", hashedPass).update(JSON.stringify(json)).digest("hex");
+					const sendDataToSource = {
+						"type": "securedMsg",
+						"data": JSON.stringify(json),
+						"requestId": counter.toString() + "sm",
+						"hmac": tf.toString()
+					};
+					ws.send(JSON.stringify(sendDataToSource));
+				}
 			}  else if (id.includes("cae")) {
-				counter = counter + 1;
-				let ok = false;
-				if (state.val !== null) {
-					if (typeof state.val === "boolean") {
-						ok = true;
-					}
-					if (ok) {
-						const sendData = {"type": "setValue", "requestId": counter, "key": "cae", "value": state.val};
-						const tf = createHmac("sha256", hashedPass).update(JSON.stringify(sendData)).digest("hex");
-						const sendDataToSource = {
-							"type": "securedMsg",
-							"data": JSON.stringify(sendData),
-							"requestId": counter.toString() + "sm",
-							"hmac": tf.toString()
-						};
-						ws.send(JSON.stringify(sendDataToSource));
+				if (hashedPass !== undefined) {
+					counter = counter + 1;
+					let ok = false;
+					if (state.val !== null) {
+						if (typeof state.val === "boolean") {
+							ok = true;
+						}
+						if (ok) {
+							const sendData = {"type": "setValue", "requestId": counter, "key": "cae", "value": state.val};
+							const tf = createHmac("sha256", hashedPass).update(JSON.stringify(sendData)).digest("hex");
+							const sendDataToSource = {
+								"type": "securedMsg",
+								"data": JSON.stringify(sendData),
+								"requestId": counter.toString() + "sm",
+								"hmac": tf.toString()
+							};
+							ws.send(JSON.stringify(sendDataToSource));
+						}
 					}
 				}
 			} else if (id.includes("AccessState")) {
-				counter = counter + 1;
-				let mode = 42;
-				if (state.val !== null) {
-					if (state.val.toString().toLowerCase().includes("open")) {
-						mode = 0;
-					}
-					if (state.val.toString().toLowerCase().includes("wait")) {
-						mode = 1;
-					}
-					if (mode !== 42) {
-						const sendData = {"type": "setValue", "requestId": counter, "key": "acs", "value": mode};
-						const tf = createHmac("sha256", hashedPass).update(JSON.stringify(sendData)).digest("hex");
-						const sendDataToSource = {
-							"type": "securedMsg",
-							"data": JSON.stringify(sendData),
-							"requestId": counter.toString() + "sm",
-							"hmac": tf.toString()
-						};
-						ws.send(JSON.stringify(sendDataToSource));
+				if (hashedPass !== undefined) {
+					counter = counter + 1;
+					let mode = 42;
+					if (state.val !== null) {
+						if (state.val.toString().toLowerCase().includes("open")) {
+							mode = 0;
+						}
+						if (state.val.toString().toLowerCase().includes("wait")) {
+							mode = 1;
+						}
+						if (mode !== 42) {
+							const sendData = {"type": "setValue", "requestId": counter, "key": "acs", "value": mode};
+							const tf = createHmac("sha256", hashedPass).update(JSON.stringify(sendData)).digest("hex");
+							const sendDataToSource = {
+								"type": "securedMsg",
+								"data": JSON.stringify(sendData),
+								"requestId": counter.toString() + "sm",
+								"hmac": tf.toString()
+							};
+							ws.send(JSON.stringify(sendDataToSource));
+						}
 					}
 				}
 			} else if (id.includes("cableLock")) {
-				counter = counter + 1;
-				let mode = 42;
-				if (state.val !== null) {
-					if (state.val.toString().toLowerCase().includes("normal")) {
-						mode = 0;
-					}
-					if (state.val.toString().toLowerCase().includes("autounlock")) {
-						mode = 1;
-					}
-					if (state.val.toString().toLowerCase().includes("alwayslock")) {
-						mode = 2;
-					}
-					if (mode !== 42) {
-						const sendData = {"type": "setValue", "requestId": counter, "key": "ust", "value": mode};
-						const tf = createHmac("sha256", hashedPass).update(JSON.stringify(sendData)).digest("hex");
-						const sendDataToSource = {
-							"type": "securedMsg",
-							"data": JSON.stringify(sendData),
-							"requestId": counter.toString() + "sm",
-							"hmac": tf.toString()
-						};
-						ws.send(JSON.stringify(sendDataToSource));
+				if (hashedPass !== undefined) {
+					counter = counter + 1;
+					let mode = 42;
+					if (state.val !== null) {
+						if (state.val.toString().toLowerCase().includes("normal")) {
+							mode = 0;
+						}
+						if (state.val.toString().toLowerCase().includes("autounlock")) {
+							mode = 1;
+						}
+						if (state.val.toString().toLowerCase().includes("alwayslock")) {
+							mode = 2;
+						}
+						if (mode !== 42) {
+							const sendData = {"type": "setValue", "requestId": counter, "key": "ust", "value": mode};
+							const tf = createHmac("sha256", hashedPass).update(JSON.stringify(sendData)).digest("hex");
+							const sendDataToSource = {
+								"type": "securedMsg",
+								"data": JSON.stringify(sendData),
+								"requestId": counter.toString() + "sm",
+								"hmac": tf.toString()
+							};
+							ws.send(JSON.stringify(sendDataToSource));
+						}
 					}
 				}
 			} else if (id.includes("set_power")) {
-				counter = counter + 1;
-				// @ts-ignore
-				const json = {"type": "setValue", "requestId": counter, "key": "amp", "value": parseInt(state.val)};
-				const tf = createHmac("sha256", hashedPass).update(JSON.stringify(json)).digest("hex");
-				const sendDataToSource = {
-					"type": "securedMsg",
-					"data": JSON.stringify(json),
-					"requestId": counter.toString() + "sm",
-					"hmac": tf.toString()
-				};
-				ws.send(JSON.stringify(sendDataToSource));
-
+				if (hashedPass !== undefined) {
+					counter = counter + 1;
+					// @ts-ignore
+					const json = {"type": "setValue", "requestId": counter, "key": "amp", "value": parseInt(state.val)};
+					const tf = createHmac("sha256", hashedPass).update(JSON.stringify(json)).digest("hex");
+					const sendDataToSource = {
+						"type": "securedMsg",
+						"data": JSON.stringify(json),
+						"requestId": counter.toString() + "sm",
+						"hmac": tf.toString()
+					};
+					ws.send(JSON.stringify(sendDataToSource));
+				}
 			} else if (id.includes("set_mode")) {
-				counter = counter + 1;
-				// @ts-ignore
-				const sendData = {"type": "setValue", "requestId": counter, "key": "lmo", "value": parseInt(state.val)};
-				const tf = createHmac("sha256", hashedPass).update(JSON.stringify(sendData)).digest("hex");
-				const sendDataToSource = {
-					"type": "securedMsg",
-					"data": JSON.stringify(sendData),
-					"requestId": counter.toString() + "sm",
-					"hmac": tf.toString()
-				};
-				ws.send(JSON.stringify(sendDataToSource));
+				if (hashedPass !== undefined) {
+					counter = counter + 1;
+					// @ts-ignore
+					const sendData = {"type": "setValue", "requestId": counter, "key": "lmo", "value": parseInt(state.val)};
+					const tf = createHmac("sha256", hashedPass).update(JSON.stringify(sendData)).digest("hex");
+					const sendDataToSource = {
+						"type": "securedMsg",
+						"data": JSON.stringify(sendData),
+						"requestId": counter.toString() + "sm",
+						"hmac": tf.toString()
+					};
+					ws.send(JSON.stringify(sendDataToSource));
+				}
 			} else if (id.includes("mode")) {
-				counter = counter + 1;
-				let mode = 0;
-				if (state.val !== null) {
-					if (state.val.toString().toLowerCase().includes("eco")) {
-						mode = 4;
-					}
-					if (state.val.toString().toLowerCase().includes("next trip")) {
-						mode = 5;
-					}
-					if (state.val.toString().toLowerCase().includes("default")) {
-						mode = 3;
-					}
-					if (mode !== 0) {
-						const sendData = {"type": "setValue", "requestId": counter, "key": "lmo", "value": mode};
-						const tf = createHmac("sha256", hashedPass).update(JSON.stringify(sendData)).digest("hex");
-						const sendDataToSource = {
-							"type": "securedMsg",
-							"data": JSON.stringify(sendData),
-							"requestId": counter.toString() + "sm",
-							"hmac": tf.toString()
-						};
-						ws.send(JSON.stringify(sendDataToSource));
+				if (hashedPass !== undefined) {
+					counter = counter + 1;
+					let mode = 0;
+					if (state.val !== null) {
+						if (state.val.toString().toLowerCase().includes("eco")) {
+							mode = 4;
+						}
+						if (state.val.toString().toLowerCase().includes("next trip")) {
+							mode = 5;
+						}
+						if (state.val.toString().toLowerCase().includes("default")) {
+							mode = 3;
+						}
+						if (mode !== 0) {
+							const sendData = {"type": "setValue", "requestId": counter, "key": "lmo", "value": mode};
+							const tf = createHmac("sha256", hashedPass).update(JSON.stringify(sendData)).digest("hex");
+							const sendDataToSource = {
+								"type": "securedMsg",
+								"data": JSON.stringify(sendData),
+								"requestId": counter.toString() + "sm",
+								"hmac": tf.toString()
+							};
+							ws.send(JSON.stringify(sendDataToSource));
+						}
 					}
 				}
 			}
