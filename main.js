@@ -741,12 +741,12 @@ class FroniusWattpilot extends utils.Adapter {
   onStateChange(id, state) {
     if (state && !state.ack) {
       this.log.debug(
-        `State change command received for ${id}: ${JSON.stringify(state)}`
+        `State change command received for ${id}: ${JSON.stringify(state)}`,
       );
 
       if (!this.hashedPassword) {
         this.log.warn(
-          `Cannot send command for ${id}: not authenticated (hashedPassword missing).`
+          `Cannot send command for ${id}: not authenticated (hashedPassword missing).`,
         );
         return;
       }
@@ -761,7 +761,7 @@ class FroniusWattpilot extends utils.Adapter {
           handler.call(this, state);
         } catch (e) {
           this.log.error(
-            `Error processing state change for ${id}: ${e.message}`
+            `Error processing state change for ${id}: ${e.message}`,
           );
         }
       } else {
@@ -773,7 +773,7 @@ class FroniusWattpilot extends utils.Adapter {
 
   // Neue generische Handler-Methode
   _handleGenericStateChange(id, state) {
-    const idParts = id.split('.');
+    const idParts = id.split(".");
     const stateName = idParts[idParts.length - 1];
 
     // Zuerst prüfen, ob ein Eintrag in STATE_DEFINITIONS existiert
@@ -784,10 +784,13 @@ class FroniusWattpilot extends utils.Adapter {
         // Umkehrung der valueMap verwenden, falls vorhanden
         const stateDef = this.STATE_DEFINITIONS[apiKey];
         if (stateDef.valueMap) {
-          const reverseMap = Object.entries(stateDef.valueMap).reduce((acc, [key, val]) => {
-            acc[val.toString().toLowerCase()] = key;
-            return acc;
-          }, {});
+          const reverseMap = Object.entries(stateDef.valueMap).reduce(
+            (acc, [key, val]) => {
+              acc[val.toString().toLowerCase()] = key;
+              return acc;
+            },
+            {},
+          );
 
           if (reverseMap[state.val.toString().toLowerCase()] !== undefined) {
             value = reverseMap[state.val.toString().toLowerCase()];
