@@ -10,6 +10,8 @@
 
 **Tests:** ![Test and Release](https://github.com/tim2zg/ioBroker.fronius-wattpilot/workflows/Test%20and%20Release/badge.svg)
 
+[Zur deutschen Version der Dokumentation](README_DE.md)
+
 ## What is this adapter?
 
 This adapter integrates your Fronius Wattpilot EV charger with ioBroker, allowing you to monitor and control your charging station. The Wattpilot is an intelligent electric vehicle charging solution that can be integrated into your smart home system.
