@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "fronius-wattpilot",
-    "version": "4.6.3",
+    "version": "4.7.0",
     "news": {
+      "4.7.0": {
+        "en": "Rewrite of the adapter\nAdded ability to set states directly\nAdded ability to set common states directly\nFix all issues",
+        "de": "Rewrite des Adapters\nZusätzlich Fähigkeit, Zustände direkt einzustellen\nZusätzlich Fähigkeit, gemeinsame Staaten direkt zu setzen\nAlle Probleme beheben",
+        "ru": "Переписать адаптер\nВозможность устанавливать состояния напрямую\nСпособность устанавливать общие состояния напрямую\nИсправить все вопросы",
+        "pt": "Reescrever o adaptador\nAdicionada capacidade de definir estados diretamente\nAdicionada capacidade de definir estados comuns diretamente\nCorrigir todos os problemas",
+        "nl": "Herschrijven van de adapter\nToegevoegd vermogen om toestanden direct in te stellen\nToegevoegd vermogen om gemeenschappelijke staten direct in te stellen\nAlle problemen oplossen",
+        "fr": "Réécriture de l'adaptateur\nAjout de la capacité de définir les états directement\nCapacité accrue de définir directement des états communs\nCorrection de tous les problèmes",
+        "it": "Riscrittura dell'adattatore\nAggiunta la capacità di impostare gli stati direttamente\nAggiunta la capacità di impostare stati comuni direttamente\nRisolvi tutti i problemi",
+        "es": "Reescritura del adaptador\nPosibilidad de establecer estados directamente\nPosibilidad de establecer estados comunes directamente\nArreglar todos los problemas",
+        "pl": "Przepisanie adaptera\nDodano możliwość bezpośredniego ustawiania stanów\nDodano możliwość bezpośredniego ustalania wspólnych państw\nNapraw wszystkie problemy",
+        "uk": "Перезапис адаптера\nДодана можливість встановлювати стани безпосередньо\nДодана можливість встановлювати загальні стани безпосередньо\nВиправлення всіх питань",
+        "zh-cn": "重写适配器\n添加直接设置状态的能力\n添加直接设定共同状态的能力\n解决所有问题"
+      },
       "4.6.3": {
         "en": "Fixed a bug where the adapter would use a undefined variable\nFixed bug #44\nFixed bug #43",
         "de": "Fehler behoben, bei dem der Adapter eine undefinierte Variable verwenden würde\nFehler behoben #44\nFehler behoben #43",
@@ -80,19 +93,6 @@
         "pl": "Dane losowe\nZmierzył się z konfliktem typu w państwie stacjonarnym\nOd tego czasu należy podpisać",
         "uk": "Виправлено випадкові повідомлення журналу\nВиправлено конфлікт типу на державному рівні\nВідтепер слід підписувати",
         "zh-cn": "固定的随机的逻辑信息\nA. 固定的类型冲突\n现在应签署的各项承诺"
-      },
-      "4.4.0": {
-        "en": "known states will now be updated even if the dynamic parser is enabled",
-        "de": "bekannte zustände werden nun aktualisiert, auch wenn der dynamische parser aktiviert ist",
-        "ru": "известные государства теперь будут обновляться, даже если динамический парсер включен",
-        "pt": "estados conhecidos agora serão atualizados, mesmo se o analisador dinâmico estiver habilitado",
-        "nl": "de bekende staat zal nu worden geüpload, zelfs als de dynamische parochie in staat is",
-        "fr": "les états connus seront maintenant mis à jour même si le parseur dynamique est activé",
-        "it": "gli stati conosciuti saranno ora aggiornati anche se il parser dinamico è abilitato",
-        "es": "los estados conocidos serán actualizados incluso si el analizador dinámico está habilitado",
-        "pl": "obecnie znane stany mogą być aktualizowane, nawet jeśli parser dynamiczny może być użyty",
-        "uk": "відомі стани тепер будуть оновлені навіть якщо ввімкнено динамічний аналіз",
-        "zh-cn": "已知国家现在将得到更新,即使有活力的序号得以更新。"
       }
     },
     "titleLang": {
