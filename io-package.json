@@ -146,7 +146,7 @@
     "materialize": true,
     "globalDependencies": [
       {
-        "admin": ">=4.0.9"
+        "admin": ">=7.4.10"
       }
     ],
     "dependencies": [

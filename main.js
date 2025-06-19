@@ -1,1596 +1,880 @@
 "use strict";
+
 const utils = require("@iobroker/adapter-core");
 const WebSocket = require("ws");
 const { createHash, createHmac, pbkdf2 } = require("crypto");
-let adapter;
+const util = require("util");
 
-let ws = undefined;
-let counter = 0;
-let sse = undefined;
-let hashedPass = undefined;
-let lastUpdate = Date.now();
-const timeout = [];
+const pbkdf2Async = util.promisify(pbkdf2);
+
+// --- Constants ---
+const ADAPTER_NAME = "fronius-wattpilot";
+
+const MESSAGE_TYPE = {
+  RESPONSE: "response",
+  HELLO: "hello",
+  AUTH_REQUIRED: "authRequired",
+  AUTH_SUCCESS: "authSuccess",
+  AUTH_ERROR: "authError",
+  SET_VALUE: "setValue",
+  SECURED_MSG: "securedMsg",
+  CLEAR_SMIPS: "clearSmips",
+  CLEAR_INVERTERS: "clearInverters",
+  UPDATE_INVERTER: "updateInverter",
+};
+
+const DEFAULT_HOST_IP = "ws://IP-Address des WattPilots/ws";
+const DEFAULT_HOST_CLOUD_PREFIX = "wss://app.wattpilot.io/app/";
+const DEFAULT_HOST_CLOUD_SERIAL = "XXXXXXXX"; // Placeholder for comparison
+const DEFAULT_HOST_CLOUD_SUFFIX = "?version=1.2.9"; // Example version
+const DEFAULT_PASSWORD_PLACEHOLDER = "Password";
+
+const UPTIME_CHECK_INTERVAL_MS = 1000 * 60 * 2.5; // 2.5 minutes
+const WEBSOCKET_HANDSHAKE_TIMEOUT_MS = 5000;
+
+// Mappings for state values
+const ACCESS_STATE_MAP_API_TO_VAL = { 0: "Open", 1: "Wait" };
+const ACCESS_STATE_MAP_VAL_TO_API = { open: 0, wait: 1 };
+
+const CABLE_LOCK_MODE_MAP_API_TO_VAL = {
+  0: "Normal",
+  1: "AutoUnlock",
+  2: "AlwaysLock",
+};
+const CABLE_LOCK_MODE_MAP_VAL_TO_API = {
+  normal: 0,
+  autounlock: 1,
+  alwayslock: 2,
+};
+
+const CHARGING_MODE_MAP_API_TO_VAL = { 3: "Default", 4: "Eco", 5: "Next Trip" };
+const CHARGING_MODE_MAP_VAL_TO_API = { default: 3, eco: 4, "next trip": 5 };
+
+const CAR_STATE_MAP = {
+  0: "Unknown/Error",
+  1: "Idle",
+  2: "Charging",
+  3: "WaitCar",
+  4: "Complete",
+  5: "Error",
+};
+const ERROR_STATE_MAP = {
+  0: "None",
+  1: "FiAc",
+  2: "FiDc",
+  3: "Phase",
+  4: "Overvolt",
+  5: "Overamp",
+  6: "Diode",
+  7: "PpInvalid",
+  8: "GndInvalid",
+  9: "ContactorStuck",
+  10: "ContactorMiss",
+  11: "FiUnknown",
+  12: "Unknown",
+  13: "Overtemp",
+  14: "NoComm",
+  15: "StatusLockStuckOpen",
+  16: "StatusLockStuckLocked",
+};
+// --- End Constants ---
 
 class FroniusWattpilot extends utils.Adapter {
-  /**
-   * @param [options]
-   */
   constructor(options) {
-    super({
-      ...options,
-      name: "fronius-wattpilot",
-    });
+    super({ ...options, name: ADAPTER_NAME });
+
+    this.ws = null;
+    this.messageCounter = 0;
+    this.sseToken = null;
+    this.hashedPassword = null;
+    this.lastMessageTime = Date.now();
+    this.rateLimitTimeouts = {}; // Stores last update timestamp for rate-limited states
+    this.connectionUptimeMonitor = null;
+    this.createdStatesRegistry = new Set(); // Tracks API keys for which states have been created
+    this.customParamsToParse = []; // Parsed from config.addParam
+
+    this.STATE_DEFINITIONS = this._getStaticStateDefinitions();
+    this.STATE_CHANGE_HANDLERS = this._getStaticStateChangeHandlers();
+
     this.on("ready", this.onReady.bind(this));
     this.on("stateChange", this.onStateChange.bind(this));
     this.on("unload", this.onUnload.bind(this));
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
-    adapter = this;
   }
-  /**
-   * Is called when databases are connected and adapter received configuration.
-   */
+
+  _getStaticStateDefinitions() {
+    // Definitions for known API keys from the Wattpilot
+    // key: API key name
+    // id: ioBroker state ID (without namespace)
+    // type: ioBroker state type
+    // write: boolean, if the state is controllable
+    // valueMap: object, to map API values to ioBroker values
+    // valueFactor: number, to multiply numeric API values (e.g., for unit conversion)
+    // rateLimit: boolean, if updates should be rate-limited by config.freq
+    // customHandler: function, for special processing (e.g., 'nrg' array)
+    return {
+      acs: {
+        id: "AccessState",
+        type: "string",
+        write: true,
+        valueMap: ACCESS_STATE_MAP_API_TO_VAL,
+      },
+      cbl: { id: "cableType", type: "number", rateLimit: true },
+      fhz: { id: "frequency", type: "number", rateLimit: true },
+      pha: { id: "phases", type: "string", rateLimit: true }, // Value is an array, store as JSON string
+      wh: { id: "energyCounterSinceStart", type: "number", rateLimit: true },
+      err: {
+        id: "errorState",
+        type: "string",
+        valueMap: ERROR_STATE_MAP,
+        rateLimit: true,
+      },
+      ust: {
+        id: "cableLock",
+        type: "string",
+        write: true,
+        valueMap: CABLE_LOCK_MODE_MAP_API_TO_VAL,
+      },
+      eto: { id: "energyCounterTotal", type: "number", rateLimit: true },
+      cae: { id: "cae", type: "boolean", write: true }, // Charge Anywhere Enabled?
+      cak: { id: "cak", type: "string", rateLimit: true }, // Cable Auth Key?
+      lmo: {
+        id: "mode",
+        type: "string",
+        write: true,
+        valueMap: CHARGING_MODE_MAP_API_TO_VAL,
+      },
+      car: {
+        id: "carConnected",
+        type: "string",
+        valueMap: CAR_STATE_MAP,
+        rateLimit: true,
+      },
+      alw: { id: "AllowCharging", type: "boolean", rateLimit: true },
+      nrg: {
+        id: "nrgData",
+        type: "object",
+        rateLimit: true,
+        customHandler: this._handleNrgData.bind(this),
+      },
+      amp: { id: "amp", type: "number", write: true },
+      version: { id: "version", type: "string", rateLimit: true }, // API Version?
+      fwv: { id: "firmware", type: "string", rateLimit: true },
+      wss: { id: "WifiSSID", type: "string", rateLimit: true },
+      upd: {
+        id: "updateAvailable",
+        type: "boolean",
+        valueMap: { 0: false, 1: true },
+        rateLimit: true,
+      },
+      fna: { id: "hostname", type: "string", rateLimit: true },
+      ffna: { id: "serial", type: "string", rateLimit: true }, // Full Friendly Name (Serial)
+      utc: { id: "TimeStamp", type: "string", rateLimit: true },
+      pvopt_averagePGrid: {
+        id: "PVUselessPower",
+        type: "number",
+        rateLimit: true,
+      },
+      lpsc: { id: "lpsc", type: "number", write: true },
+      awp: {
+        id: "awp",
+        type: "number",
+        write: true,
+        rateLimit: true,
+      },
+    };
+  }
+
+  _getStaticStateChangeHandlers() {
+    // Maps ioBroker state IDs (full path) to handler methods for sending commands
+    return {
+      [`${this.namespace}.set_power`]: (state) =>
+        this._sendSecureCommand("amp", parseInt(state.val)),
+      [`${this.namespace}.set_mode`]: (state) =>
+        this._sendSecureCommand("lmo", parseInt(state.val)),
+      [`${this.namespace}.set_state`]: this._handleSetGenericStateCommand,
+      [`${this.namespace}.amp`]: (state) =>
+        this._sendSecureCommand("amp", parseInt(state.val)),
+      [`${this.namespace}.cae`]: (state) =>
+        this._sendSecureCommand(
+          "cae",
+          state.val === true || state.val === "true",
+        ),
+      [`${this.namespace}.AccessState`]: (state) => {
+        const apiVal =
+          ACCESS_STATE_MAP_VAL_TO_API[state.val.toString().toLowerCase()];
+        if (apiVal !== undefined) {
+          this._sendSecureCommand("acs", apiVal);
+        } else {
+          this.log.warn(`Invalid AccessState value: ${state.val}`);
+        }
+      },
+      [`${this.namespace}.cableLock`]: (state) => {
+        const apiVal =
+          CABLE_LOCK_MODE_MAP_VAL_TO_API[state.val.toString().toLowerCase()];
+        if (apiVal !== undefined) {
+          this._sendSecureCommand("ust", apiVal);
+        } else {
+          this.log.warn(`Invalid cableLock value: ${state.val}`);
+        }
+      },
+      [`${this.namespace}.mode`]: (state) => {
+        const apiVal =
+          CHARGING_MODE_MAP_VAL_TO_API[state.val.toString().toLowerCase()];
+        if (apiVal !== undefined) {
+          this._sendSecureCommand("lmo", apiVal);
+        } else {
+          this.log.warn(`Invalid mode value: ${state.val}`);
+        }
+      },
+    };
+  }
+
   async onReady() {
-    const createdStates = [];
-    const password = this.config.pass;
-    const useNormalParser = this.config.parser;
-    let hostToConnect;
-    const start = Date.now();
-    const logger = this.log;
-    const freq = this.config.freq;
-
-    const addParam = this.config.addParam;
-    let arrParam = [];
-    if (addParam !== "") {
-      arrParam = addParam.split(";");
-    }
-
-    if (this.config["cloud"]) {
-      hostToConnect = `wss://app.wattpilot.io/app/${
-        this.config["serial-number"]
-      }?version=1.2.9`;
-    } else {
-      hostToConnect = `ws://${this.config["ip-host"]}/ws`;
-    }
-
     this.setState("info.connection", false, true);
-    logger.info(`Try to connect to: ${hostToConnect}`);
+
+    if (!this._validateConfig()) {
+      return; // Stop if config is invalid
+    }
+
+    if (this.config.addParam) {
+      this.customParamsToParse = this.config.addParam
+        .split(";")
+        .map((p) => p.trim())
+        .filter((p) => p);
+    }
+
+    await this._initializeControlStates();
+    this.connectionUptimeMonitor = setInterval(
+      this._checkUptime.bind(this),
+      UPTIME_CHECK_INTERVAL_MS,
+    );
+
+    this._createWsConnection();
+  }
+
+  _getWebSocketUrl() {
+    if (this.config.cloud) {
+      const serial = this.config["serial-number"] || DEFAULT_HOST_CLOUD_SERIAL;
+      return `${DEFAULT_HOST_CLOUD_PREFIX}${serial}${DEFAULT_HOST_CLOUD_SUFFIX}`;
+    }
+    return `ws://${this.config["ip-host"] || "localhost"}/ws`;
+  }
+
+  _validateConfig() {
+    const hostToConnect = this._getWebSocketUrl();
+    const password = this.config.pass;
+
+    let isValid = true;
+    if (!password || password === DEFAULT_PASSWORD_PLACEHOLDER) {
+      this.log.error(
+        "Password is not configured or is the default placeholder.",
+      );
+      isValid = false;
+    }
+    if (this.config.cloud) {
+      if (
+        !this.config["serial-number"] ||
+        this.config["serial-number"] === DEFAULT_HOST_CLOUD_SERIAL
+      ) {
+        this.log.error(
+          "Cloud connection selected, but serial number is missing or is the default placeholder.",
+        );
+        isValid = false;
+      }
+    } else {
+      if (!this.config["ip-host"] || hostToConnect === DEFAULT_HOST_IP) {
+        this.log.error(
+          "Local connection selected, but IP address/hostname is missing or is the default placeholder.",
+        );
+        isValid = false;
+      }
+    }
+
+    if (isValid) {
+      this.log.info(`Attempting to connect to: ${hostToConnect}`);
+    }
+    return isValid;
+  }
+
+  async _initializeControlStates() {
+    await this._ensureObjectExists("set_power", "value", "number", true, true);
+    this.subscribeStates("set_power");
+
+    await this._ensureObjectExists("set_mode", "value", "number", true, true);
+    this.subscribeStates("set_mode");
+
+    await this._ensureObjectExists("set_state", "value", "string", true, true);
+    this.subscribeStates("set_state");
+  }
+
+  _createWsConnection() {
+    if (
+      this.ws &&
+      (this.ws.readyState === WebSocket.OPEN ||
+        this.ws.readyState === WebSocket.CONNECTING)
+    ) {
+      this.log.debug(
+        "WebSocket connection attempt skipped, already open or connecting.",
+      );
+      return;
+    }
+    if (this.ws) {
+      this.ws.removeAllListeners(); // Clean up old listeners
+      this.ws.terminate(); // Force close if exists
+    }
+
+    const hostToConnect = this._getWebSocketUrl();
+    this.log.info(`Creating WebSocket connection to ${hostToConnect}`);
+    this.ws = new WebSocket(hostToConnect, {
+      handshakeTimeout: WEBSOCKET_HANDSHAKE_TIMEOUT_MS,
+    });
+    this.messageCounter = 0; // Reset counter for new connection
+
+    this.ws.on("open", () => {
+      this.log.debug("WebSocket connection opened. Waiting for messages.");
+      // Connection state will be set to true upon successful authentication
+    });
+
+    this.ws.on("message", (data) => {
+      this.lastMessageTime = Date.now();
+      try {
+        const messageString = data.toString();
+        const messageData = JSON.parse(messageString);
+        this._handleWebSocketMessage(messageData);
+      } catch (e) {
+        this.log.error(
+          `Error parsing JSON message: ${e.message}. Data: ${data.toString()}`,
+        );
+      }
+    });
+
+    this.ws.on("error", (err) => {
+      this.log.error(`WebSocket error: ${err.message}.`);
+      this.setState("info.connection", false, true);
+      // Reconnect attempt will be handled by _checkUptime or implicitly on next scheduled call if needed
+    });
+
+    this.ws.on("close", (code, reason) => {
+      this.log.info(
+        `WebSocket connection closed. Code: ${code}, Reason: ${reason ? reason.toString() : "N/A"}`,
+      );
+      this.setState("info.connection", false, true);
+      this.hashedPassword = null; // Invalidate hash on disconnect
+      // Reconnect logic is handled by _checkUptime
+    });
+  }
+
+  async _handleWebSocketMessage(message) {
+    this.log.debug(`Received message: ${JSON.stringify(message)}`);
+
+    switch (message.type) {
+      case MESSAGE_TYPE.RESPONSE:
+        this._handleResponseMessage(message);
+        break;
+      case MESSAGE_TYPE.HELLO:
+        this.sseToken = message.serial;
+        this.log.info(`Received HELLO, SSE token: ${this.sseToken}`);
+        break;
+      case MESSAGE_TYPE.AUTH_REQUIRED:
+        await this._handleAuthRequiredMessage(message);
+        break;
+      case MESSAGE_TYPE.AUTH_SUCCESS:
+        await this.setState("info.connection", true, true);
+        this.log.info("Authentication successful. Connected to Wattpilot.");
+        break;
+      case MESSAGE_TYPE.AUTH_ERROR:
+        this.log.error("Authentication failed. Please check your password.");
+        await this.setState("info.connection", false, true);
+        if (this.ws) {
+          this.ws.close();
+        } // Close connection on auth error
+        break;
+      case MESSAGE_TYPE.CLEAR_SMIPS:
+        break;
+      case MESSAGE_TYPE.CLEAR_INVERTERS:
+        break;
+      case MESSAGE_TYPE.UPDATE_INVERTER:
+        break; // Not used in this adapter
+      default:
+        // Assume it's a status update if it has a 'status' property
+        if (message.status && typeof message.status === "object") {
+          await this._parseStatusMessage(message.status);
+        } else {
+          this.log.warn(
+            `Received unhandled message type: ${message.type || "Unknown"}`,
+          );
+        }
+    }
+  }
+
+  _handleResponseMessage(message) {
+    if (message.success) {
+      this.log.debug(`Command successful: ${JSON.stringify(message.status)}`);
+      // Update corresponding 'set_...' states if needed, though usually status messages provide this
+      if (message.status && message.status.amp !== undefined) {
+        this.setState("set_power", message.status.amp, true);
+      } else if (message.status && message.status.lmo !== undefined) {
+        this.setState("set_mode", message.status.lmo, true);
+      } else {
+        this.setState("set_state", "", true); // Clear after generic command
+      }
+    } else {
+      this.log.error(
+        `Command failed: ${message.message || "No error message provided."}`,
+      );
+    }
+  }
+
+  async _handleAuthRequiredMessage(message) {
+    if (!this.sseToken) {
+      this.log.error(
+        "Authentication required, but SSE token (from HELLO) is missing.",
+      );
+      return;
+    }
+    if (!this.config.pass) {
+      this.log.error(
+        "Authentication required, but password is not configured.",
+      );
+      return;
+    }
+
+    try {
+      const token3 =
+        BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)).toString() +
+        BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)).toString(); // Larger random number
+
+      const derivedKey = await pbkdf2Async(
+        this.config.pass,
+        this.sseToken,
+        100000,
+        256,
+        "sha512",
+      );
+      this.hashedPassword = derivedKey.toString("base64").substring(0, 32);
+
+      const hash1 = createHash("sha256")
+        .update(message.token1 + this.hashedPassword)
+        .digest("hex");
+      const finalHash = createHash("sha256")
+        .update(token3 + message.token2 + hash1)
+        .digest("hex");
+
+      const authResponse = {
+        type: "auth",
+        token3: token3,
+        hash: finalHash,
+      };
+      this.log.debug("Sending authentication response.");
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        this.ws.send(JSON.stringify(authResponse));
+      }
+    } catch (err) {
+      this.log.error(`Error during authentication process: ${err.message}`);
+      this.setState("info.connection", false, true);
+    }
+  }
+
+  async _parseStatusMessage(statusData) {
+    const enableDynamic = this.config.parser === false; // 'parser' in config means 'strict', so false means dynamic
+
+    for (const apiKey in statusData) {
+      if (!Object.prototype.hasOwnProperty.call(statusData, apiKey)) {
+        continue;
+      }
+
+      const apiValue = statusData[apiKey];
+      const stateDef = this.STATE_DEFINITIONS[apiKey];
+
+      if (stateDef) {
+        await this._processDefinedState(apiKey, apiValue, stateDef);
+      } else if (this.customParamsToParse.includes(apiKey)) {
+        await this._processDynamicOrCustomState(apiKey, apiValue, true);
+      } else if (enableDynamic) {
+        await this._processDynamicOrCustomState(apiKey, apiValue, false);
+      }
+    }
+  }
+
+  async _processDefinedState(apiKey, apiValue, stateDef) {
+    let processedValue = apiValue;
+
+    if (stateDef.valueMap && stateDef.valueMap[apiValue] !== undefined) {
+      processedValue = stateDef.valueMap[apiValue];
+    } else if (typeof apiValue === "number" && stateDef.valueFactor) {
+      // Korrekte Behandlung von Float-Werten bei der Anwendung eines Faktors
+      processedValue = parseFloat((apiValue * stateDef.valueFactor).toFixed(6));
+    } else if (
+      typeof apiValue === "string" &&
+      !isNaN(parseFloat(apiValue)) &&
+      stateDef.type === "number"
+    ) {
+      // Strings, die Zahlen repräsentieren, in echte Zahlen umwandeln
+      processedValue = parseFloat(apiValue);
+      if (stateDef.valueFactor) {
+        processedValue = parseFloat(
+          (processedValue * stateDef.valueFactor).toFixed(6),
+        );
+      }
+    } else if (
+      (Array.isArray(apiValue) || typeof apiValue === "object") &&
+      stateDef.type === "string"
+    ) {
+      processedValue = JSON.stringify(apiValue);
+    }
+
+    if (!this.createdStatesRegistry.has(apiKey)) {
+      await this._ensureObjectExists(
+        stateDef.id,
+        "value",
+        stateDef.type,
+        true,
+        stateDef.write || false,
+      );
+      if (stateDef.write) {
+        this.subscribeStates(stateDef.id);
+      }
+      this.createdStatesRegistry.add(apiKey);
+    }
+
+    if (stateDef.rateLimit && !this._shouldUpdateByRateLimit(apiKey)) {
+      return; // Skip update due to rate limit
+    }
+
+    if (stateDef.customHandler) {
+      await stateDef.customHandler(apiKey, apiValue, stateDef);
+    } else {
+      await this.setStateAsync(stateDef.id, { val: processedValue, ack: true });
+    }
+
+    if (stateDef.rateLimit) {
+      this._updateRateLimitTimestamp(apiKey);
+    }
+  }
+
+  async _handleNrgData(apiKey, apiValueArray) {
+    // apiValueArray is like [V1, V2, V3, VN, A1, A2, A3, P1, P2, P3, PN, PTotal]
+    // Power values are in W, convert to kW for consistency if desired (original code used 0.001 for kW)
+    const nrgStates = [
+      { id: "voltage1", value: apiValueArray[0] },
+      { id: "voltage2", value: apiValueArray[1] },
+      { id: "voltage3", value: apiValueArray[2] },
+      { id: "voltageN", value: apiValueArray[3] },
+      { id: "amps1", value: apiValueArray[4] },
+      { id: "amps2", value: apiValueArray[5] },
+      { id: "amps3", value: apiValueArray[6] },
+      { id: "power1", value: apiValueArray[7] * 0.001 },
+      { id: "power2", value: apiValueArray[8] * 0.001 },
+      { id: "power3", value: apiValueArray[9] * 0.001 },
+      { id: "powerN", value: apiValueArray[10] * 0.001 },
+      { id: "power", value: apiValueArray[11] * 0.001 }, // Total power
+    ];
+
+    for (const nrgState of nrgStates) {
+      if (
+        apiValueArray.length > nrgStates.indexOf(nrgState) &&
+        nrgState.value !== undefined
+      ) {
+        // Check if value exists in array
+        const fullStateId = `${apiKey}_${nrgState.id}`; // e.g., nrgData_voltage1
+        if (!this.createdStatesRegistry.has(fullStateId)) {
+          await this._ensureObjectExists(
+            nrgState.id,
+            "value",
+            "number",
+            true,
+            false,
+          ); // Assuming nrg states are read-only
+          this.createdStatesRegistry.add(fullStateId); // Use a unique key for registry
+        }
+        await this.setStateAsync(nrgState.id, {
+          val: nrgState.value,
+          ack: true,
+        });
+      }
+    }
+  }
+
+  async _processDynamicOrCustomState(apiKey, apiValue, isCustomViaConfig) {
+    if (apiValue === null || apiValue === undefined) {
+      return;
+    }
 
     if (
-      hostToConnect === undefined ||
-      password === undefined ||
-      password === "Password" ||
-      hostToConnect === "ws://IP-Address des WattPilots/ws" ||
-      hostToConnect === "wss://app.wattpilot.io/app/XXXXXXXX?version=1.2.9"
+      isCustomViaConfig &&
+      this.rateLimitTimeouts[apiKey] &&
+      !this._shouldUpdateByRateLimit(apiKey)
     ) {
-      logger.error("Please use a valid host and password");
-    } else {
-      await createObjectAsync("set_power", "value", "number", true, true);
-      this.subscribeStates("set_power");
-
-      await createObjectAsync("set_mode", "value", "number", true, true);
-      this.subscribeStates("set_mode");
-
-      await createObjectAsync("set_state", "value", "string", true, true);
-      this.subscribeStates("set_state");
-
-      this.connectionUpTimeMonitor = setInterval(checkUpTime, 1000 * 60 * 2.5);
-
-      createWsConnection();
+      return; // Apply rate limit for custom params if they were already created
     }
 
-    function createWsConnection() {
-      if (ws !== undefined && ws.readyState === 1) {
-        ws.close();
-        ws = undefined;
-      }
-      ws = new WebSocket(hostToConnect, { handshakeTimeout: 5000 });
-      counter = 0;
-
-      ws.addEventListener("error", () => {
-        // Handle error
-        const elapsed = Date.now() - start;
-        logger.error(`Error after ${elapsed}ms`);
-        logger.error(
-          "Please check your host! Seams like your host is Offline, attempt to reconnect in 2.5 minutes",
-        );
-      });
-
-      ws.on("message", async (messageData) => {
-        // Handle on Message event
-        lastUpdate = Date.now();
-        try {
-          messageData = JSON.parse(messageData); // Convert Message to JSON
-        } catch (e) {
-          logger.error(`Error on parsing JSON: ${e} ${messageData}`);
-          logger.error("Pleas check your Pilot!");
-        }
-
-        if (messageData["type"] === "response") {
-          if (messageData["success"]) {
-            if (messageData["status"]["amp"] !== undefined) {
-              adapter.setState("set_power", messageData["status"]["amp"], true);
-            } else if (messageData["status"]["lmo"] !== undefined) {
-              adapter.setState("set_mode", messageData["status"]["lmo"], true);
-            } else {
-              adapter.setState("set_state", "", true);
-            }
-          } else {
-            logger.error(`Error on setting value: ${messageData["message"]}`);
-          }
-        } else if (messageData["type"] === "hello") {
-          // Handle Hello Message
-          sse = messageData["serial"];
-        } else if (messageData["type"] === "authRequired") {
-          // Handle Auth Message
-          // Using SSE from Hello Message to craft auth Message
-
-          const token3 = BigInt(
-            Math.random() * 100000000000000000000000000000000,
-          ).toString();
-          pbkdf2(password, sse, 100000, 256, "sha512", (err, derivedKey) => {
-            if (err) {
-              throw err;
-            }
-            hashedPass = derivedKey.toString("base64").substr(0, 32);
-            const hash1 = createHash("sha256")
-              .update(messageData["token1"] + hashedPass)
-              .digest("hex");
-            const hash = createHash("sha256")
-              .update(token3 + messageData["token2"] + hash1)
-              .digest("hex");
-            const response = {
-              type: "auth",
-              token3: token3.toString(),
-              hash: hash.toString(),
-            };
-            ws.send(JSON.stringify(response));
-          });
-        } else if (messageData["type"] === "authSuccess") {
-          adapter.setState("info.connection", true, true); // Set Connection State to true if auth was successful
-          logger.info("Connected!");
-        } else if (messageData["type"] === "authError") {
-          // Handle Auth Error
-          logger.error("Password wrong!");
-        } else {
-          strictParser(messageData);
-        }
-      });
-    }
-
-    async function strictParser(dataToParse) {
-      const data2 = dataToParse;
-      for (dataToParse in dataToParse["status"]) {
-        const dataKeyToParse = dataToParse.toString();
-        if (createdStates.includes(dataKeyToParse)) {
-          switch (dataKeyToParse) {
-            case "acs":
-              if (data2["status"][dataKeyToParse] === 0) {
-                await adapter.setStateAsync("AccessState", {
-                  val: "Open",
-                  ack: true,
-                });
-              } else if (data2["status"][dataKeyToParse] === 1) {
-                await adapter.setStateAsync("AccessState", {
-                  val: "Wait",
-                  ack: true,
-                });
-              }
-              break;
-
-            case "cbl":
-              if (timeout["cbl"] + 1000 * freq < Date.now()) {
-                // Handel Delta Message and store them
-                timeout["cbl"] = Date.now();
-                await adapter.setStateAsync("cableType", {
-                  val: data2["status"][dataKeyToParse],
-                  ack: true,
-                });
-              }
-              break;
-
-            case "fhz":
-              if (timeout["fhz"] + 1000 * freq < Date.now()) {
-                // Handel Delta Message and store them
-                timeout["fhz"] = Date.now();
-                await adapter.setStateAsync("frequency", {
-                  val: data2["status"][dataKeyToParse],
-                  ack: true,
-                });
-              }
-              break;
-
-            case "pha":
-              if (timeout["pha"] + 1000 * freq < Date.now()) {
-                // Handel Delta Message and store them
-                timeout["pha"] = Date.now();
-                await adapter.setStateAsync("phases", {
-                  val: JSON.stringify(data2["status"][dataKeyToParse]),
-                  ack: true,
-                });
-              }
-              break;
-
-            case "wh":
-              if (timeout["wh"] + 1000 * freq < Date.now()) {
-                // Handel Delta Message and store them
-                timeout["wh"] = Date.now();
-                await adapter.setStateAsync("energyCounterSinceStart", {
-                  val: data2["status"][dataKeyToParse],
-                  ack: true,
-                });
-              }
-              break;
-
-            case "err":
-              if (timeout["err"] + 1000 * freq < Date.now()) {
-                // Handel Delta Message and store them
-                timeout["err"] = Date.now();
-                switch (data2["status"][dataKeyToParse]) {
-                  case 0:
-                    await adapter.setStateAsync("errorState", {
-                      val: "None",
-                      ack: true,
-                    });
-                    break;
-                  case 1:
-                    await adapter.setStateAsync("errorState", {
-                      val: "FiAc",
-                      ack: true,
-                    });
-                    break;
-                  case 2:
-                    await adapter.setStateAsync("errorState", {
-                      val: "FiDc",
-                      ack: true,
-                    });
-                    break;
-                  case 3:
-                    await adapter.setStateAsync("errorState", {
-                      val: "Phase",
-                      ack: true,
-                    });
-                    break;
-                  case 4:
-                    await adapter.setStateAsync("errorState", {
-                      val: "Overvolt",
-                      ack: true,
-                    });
-                    break;
-                  case 5:
-                    await adapter.setStateAsync("errorState", {
-                      val: "Overamp",
-                      ack: true,
-                    });
-                    break;
-                  case 6:
-                    await adapter.setStateAsync("errorState", {
-                      val: "Diode",
-                      ack: true,
-                    });
-                    break;
-                  case 7:
-                    await adapter.setStateAsync("errorState", {
-                      val: "PpInvalid",
-                      ack: true,
-                    });
-                    break;
-                  case 8:
-                    await adapter.setStateAsync("errorState", {
-                      val: "GndInvalid",
-                      ack: true,
-                    });
-                    break;
-                  case 9:
-                    await adapter.setStateAsync("errorState", {
-                      val: "ContactorStuck",
-                      ack: true,
-                    });
-                    break;
-                  case 10:
-                    await adapter.setStateAsync("errorState", {
-                      val: "ContactorMiss",
-                      ack: true,
-                    });
-                    break;
-                  case 11:
-                    await adapter.setStateAsync("errorState", {
-                      val: "FiUnknown",
-                      ack: true,
-                    });
-                    break;
-                  case 12:
-                    await adapter.setStateAsync("errorState", {
-                      val: "Unknown",
-                      ack: true,
-                    });
-                    break;
-                  case 13:
-                    await adapter.setStateAsync("errorState", {
-                      val: "Overtemp",
-                      ack: true,
-                    });
-                    break;
-                  case 14:
-                    await adapter.setStateAsync("errorState", {
-                      val: "NoComm",
-                      ack: true,
-                    });
-                    break;
-                  case 15:
-                    await adapter.setStateAsync("errorState", {
-                      val: "StatusLockStuckOpen",
-                      ack: true,
-                    });
-                    break;
-                  case 16:
-                    await adapter.setStateAsync("errorState", {
-                      val: "StatusLockStuckLocked",
-                      ack: true,
-                    });
-                    break;
-                }
-              }
-              break;
-
-            case "ust":
-              switch (data2["status"][dataKeyToParse]) {
-                case 0:
-                  await adapter.setStateAsync("cableLock", {
-                    val: "Normal",
-                    ack: true,
-                  });
-                  break;
-                case 1:
-                  await adapter.setStateAsync("cableLock", {
-                    val: "AutoUnlock",
-                    ack: true,
-                  });
-                  break;
-                case 2:
-                  await adapter.setStateAsync("cableLock", {
-                    val: "AlwaysLock",
-                    ack: true,
-                  });
-                  break;
-              }
-              break;
-
-            case "eto":
-              if (timeout["eto"] + 1000 * freq < Date.now()) {
-                // Handel Delta Message and store them
-                timeout["eto"] = Date.now();
-                await adapter.setStateAsync("energyCounterTotal", {
-                  val: data2["status"][dataKeyToParse],
-                  ack: true,
-                });
-              }
-              break;
-
-            case "cae":
-              await adapter.setStateAsync("cae", {
-                val: data2["status"][dataKeyToParse],
-                ack: true,
-              });
-              break;
-
-            case "cak":
-              if (timeout["cak"] + 1000 * freq < Date.now()) {
-                // Handel Delta Message and store them
-                timeout["cak"] = Date.now();
-                await adapter.setStateAsync("cak", {
-                  val: data2["status"][dataKeyToParse],
-                  ack: true,
-                });
-              }
-              break;
-
-            case "lmo":
-              switch (data2["status"][dataKeyToParse]) {
-                case 3:
-                  await adapter.setStateAsync("mode", {
-                    val: "Default",
-                    ack: true,
-                  });
-                  break;
-                case 4:
-                  await adapter.setStateAsync("mode", {
-                    val: "Eco",
-                    ack: true,
-                  });
-                  break;
-                case 5:
-                  await adapter.setStateAsync("mode", {
-                    val: "Next Trip",
-                    ack: true,
-                  });
-                  break;
-              }
-              break;
-
-            case "car":
-              if (timeout["car"] + 1000 * freq < Date.now()) {
-                // Handel Delta Message and store them
-                timeout["car"] = Date.now();
-                switch (data2["status"][dataKeyToParse]) {
-                  case 0:
-                    await adapter.setStateAsync("carConnected", {
-                      val: "Unknown/Error",
-                      ack: true,
-                    });
-                    break;
-                  case 1:
-                    await adapter.setStateAsync("carConnected", {
-                      val: "Idle",
-                      ack: true,
-                    });
-                    break;
-                  case 2:
-                    await adapter.setStateAsync("carConnected", {
-                      val: "Charging",
-                      ack: true,
-                    });
-                    break;
-                  case 3:
-                    await adapter.setStateAsync("carConnected", {
-                      val: "WaitCar",
-                      ack: true,
-                    });
-                    break;
-                  case 4:
-                    await adapter.setStateAsync("carConnected", {
-                      val: "Complete",
-                      ack: true,
-                    });
-                    break;
-                  case 5:
-                    await adapter.setStateAsync("carConnected", {
-                      val: "Error",
-                      ack: true,
-                    });
-                    break;
-                }
-              }
-              break;
-
-            case "alw":
-              if (timeout["alw"] + 1000 * freq < Date.now()) {
-                // Handel Delta Message and store them
-                timeout["alw"] = Date.now();
-                await adapter.setStateAsync("AllowCharging", {
-                  val: data2["status"][dataKeyToParse],
-                  ack: true,
-                });
-              }
-              break;
-
-            case "nrg":
-              if (timeout["nrg"] + 1000 * freq < Date.now()) {
-                // Handel Delta Message and store them
-                timeout["nrg"] = Date.now();
-                await adapter.setStateAsync("voltage1", {
-                  val: data2["status"][dataKeyToParse][0],
-                  ack: true,
-                });
-                await adapter.setStateAsync("voltage2", {
-                  val: data2["status"][dataKeyToParse][1],
-                  ack: true,
-                });
-                await adapter.setStateAsync("voltage3", {
-                  val: data2["status"][dataKeyToParse][2],
-                  ack: true,
-                });
-                await adapter.setStateAsync("voltageN", {
-                  val: data2["status"][dataKeyToParse][3],
-                  ack: true,
-                });
-                await adapter.setStateAsync("amps1", {
-                  val: data2["status"][dataKeyToParse][4],
-                  ack: true,
-                });
-                await adapter.setStateAsync("amps2", {
-                  val: data2["status"][dataKeyToParse][5],
-                  ack: true,
-                });
-                await adapter.setStateAsync("amps3", {
-                  val: data2["status"][dataKeyToParse][6],
-                  ack: true,
-                });
-                await adapter.setStateAsync("power1", {
-                  val: data2["status"][dataKeyToParse][7] * 0.001,
-                  ack: true,
-                });
-                await adapter.setStateAsync("power2", {
-                  val: data2["status"][dataKeyToParse][8] * 0.001,
-                  ack: true,
-                });
-                await adapter.setStateAsync("power3", {
-                  val: data2["status"][dataKeyToParse][9] * 0.001,
-                  ack: true,
-                });
-                await adapter.setStateAsync("powerN", {
-                  val: data2["status"][dataKeyToParse][10] * 0.001,
-                  ack: true,
-                });
-                await adapter.setStateAsync("power", {
-                  val: data2["status"][dataKeyToParse][11] * 0.001,
-                  ack: true,
-                });
-              }
-              break;
-
-            case "amp":
-              await adapter.setStateAsync("amp", {
-                val: data2["status"][dataKeyToParse],
-                ack: true,
-              });
-              break;
-
-            case "version":
-              if (timeout["version"] + 1000 * freq < Date.now()) {
-                // Handel Delta Message and store them
-                timeout["version"] = Date.now();
-                await adapter.setStateAsync("version", {
-                  val: data2["status"][dataKeyToParse],
-                  ack: true,
-                });
-              }
-              break;
-
-            case "fwv":
-              if (timeout["fwv"] + 1000 * freq < Date.now()) {
-                // Handel Delta Message and store them
-                timeout["fwv"] = Date.now();
-                await adapter.setStateAsync("firmware", {
-                  val: data2["status"][dataKeyToParse],
-                  ack: true,
-                });
-              }
-              break;
-
-            case "wss":
-              if (timeout["wss"] + 1000 * freq < Date.now()) {
-                // Handel Delta Message and store them
-                timeout["wss"] = Date.now();
-                await adapter.setStateAsync("WifiSSID", {
-                  val: data2["status"][dataKeyToParse],
-                  ack: true,
-                });
-              }
-              break;
-
-            case "upd":
-              if (timeout["upd"] + 1000 * freq < Date.now()) {
-                // Handel Delta Message and store them
-                timeout["upd"] = Date.now();
-                if (data2["status"][dataKeyToParse] === "0") {
-                  await adapter.setStateAsync("updateAvailable", {
-                    val: false,
-                    ack: true,
-                  });
-                } else {
-                  await adapter.setStateAsync("updateAvailable", {
-                    val: true,
-                    ack: true,
-                  });
-                }
-              }
-              break;
-
-            case "fna":
-              if (timeout["fna"] + 1000 * freq < Date.now()) {
-                // Handel Delta Message and store them
-                timeout["fna"] = Date.now();
-                await adapter.setStateAsync("hostname", {
-                  val: data2["status"][dataKeyToParse],
-                  ack: true,
-                });
-              }
-              break;
-
-            case "ffna":
-              if (timeout["ffna"] + 1000 * freq < Date.now()) {
-                // Handel Delta Message and store them
-                timeout["ffna"] = Date.now();
-                await adapter.setStateAsync("serial", {
-                  val: data2["status"][dataKeyToParse],
-                  ack: true,
-                });
-              }
-              break;
-
-            case "utc":
-              if (timeout["utc"] + 1000 * freq < Date.now()) {
-                // Handel Delta Message and store them
-                timeout["utc"] = Date.now();
-                await adapter.setStateAsync("TimeStamp", {
-                  val: data2["status"][dataKeyToParse],
-                  ack: true,
-                });
-              }
-              break;
-
-            case "pvopt_averagePGrid":
-              if (timeout["pvopt_averagePGrid"] + 1000 * freq < Date.now()) {
-                // Handel Delta Message and store them
-                timeout["pvopt_averagePGrid"] = Date.now();
-                await adapter.setStateAsync("PVUselessPower", {
-                  val: data2["status"][dataKeyToParse],
-                  ack: true,
-                });
-              }
-              break;
-            // No State to parse found for this key, check if user wants this state
-            default:
-              await checkCustomAddedParameters(
-                dataKeyToParse,
-                data2["status"][dataKeyToParse],
-              );
-              if (!useNormalParser) {
-                if (timeout[dataKeyToParse] + 1000 * freq < Date.now()) {
-                  // Handel Delta Message and store them
-                  timeout[dataKeyToParse] = Date.now();
-                  if (data2["status"][dataKeyToParse] !== null) {
-                    if (
-                      data2["status"][dataKeyToParse]
-                        .toString()
-                        .includes(",") ||
-                      data2["status"][dataKeyToParse]
-                        .toString()
-                        .includes("[") ||
-                      data2["status"][dataKeyToParse].toString().includes("{")
-                    ) {
-                      await adapter.setStateAsync(dataKeyToParse, {
-                        val: JSON.stringify(
-                          data2["status"][dataKeyToParse],
-                        ).toString(),
-                        ack: true,
-                      });
-                    } else {
-                      await adapter.setStateAsync(dataKeyToParse, {
-                        val: data2["status"][dataKeyToParse],
-                        ack: true,
-                      });
-                    }
-                  }
-                }
-              }
-          }
-        } else {
-          switch (dataKeyToParse) {
-            case "acs":
-              timeout["acs"] = Date.now();
-              await createObjectAsync(
-                "AccessState",
-                "value",
-                "string",
-                true,
-                true,
-              );
-              createdStates.push("acs");
-
-              adapter.subscribeStates("AccessState");
-
-              if (data2["status"][dataKeyToParse] === 0) {
-                await adapter.setStateAsync("AccessState", {
-                  val: "Open",
-                  ack: true,
-                });
-              } else if (data2["status"][dataKeyToParse] === 1) {
-                await adapter.setStateAsync("AccessState", {
-                  val: "Wait",
-                  ack: true,
-                });
-              }
-              break;
-
-            case "cbl":
-              timeout["cbl"] = Date.now();
-              await createObjectAsync("cableType", "value", "number");
-              createdStates.push("cbl");
-              await adapter.setStateAsync("cableType", {
-                val: data2["status"][dataKeyToParse],
-                ack: true,
-              });
-              break;
-
-            case "fhz":
-              timeout["fhz"] = Date.now();
-              await createObjectAsync("frequency", "value", "number");
-              createdStates.push("fhz");
-              await adapter.setStateAsync("frequency", {
-                val: data2["status"][dataKeyToParse],
-                ack: true,
-              });
-              break;
-
-            case "pha":
-              timeout["pha"] = Date.now();
-              await createObjectAsync("phases", "value", "string");
-              createdStates.push("pha");
-              await adapter.setStateAsync("phases", {
-                val: JSON.stringify(data2["status"][dataKeyToParse]),
-                ack: true,
-              });
-              break;
-
-            case "wh":
-              timeout["wh"] = Date.now();
-              await createObjectAsync(
-                "energyCounterSinceStart",
-                "value",
-                "number",
-              );
-              createdStates.push("wh");
-              await adapter.setStateAsync("energyCounterSinceStart", {
-                val: data2["status"][dataKeyToParse],
-                ack: true,
-              });
-              break;
-
-            case "err":
-              timeout["err"] = Date.now();
-              await createObjectAsync("errorState", "value", "string");
-              createdStates.push("err");
-
-              switch (data2["status"][dataKeyToParse]) {
-                case 0:
-                  await adapter.setStateAsync("errorState", {
-                    val: "None",
-                    ack: true,
-                  });
-                  break;
-                case 1:
-                  await adapter.setStateAsync("errorState", {
-                    val: "FiAc",
-                    ack: true,
-                  });
-                  break;
-                case 2:
-                  await adapter.setStateAsync("errorState", {
-                    val: "FiDc",
-                    ack: true,
-                  });
-                  break;
-                case 3:
-                  await adapter.setStateAsync("errorState", {
-                    val: "Phase",
-                    ack: true,
-                  });
-                  break;
-                case 4:
-                  await adapter.setStateAsync("errorState", {
-                    val: "Overvolt",
-                    ack: true,
-                  });
-                  break;
-                case 5:
-                  await adapter.setStateAsync("errorState", {
-                    val: "Overamp",
-                    ack: true,
-                  });
-                  break;
-                case 6:
-                  await adapter.setStateAsync("errorState", {
-                    val: "Diode",
-                    ack: true,
-                  });
-                  break;
-                case 7:
-                  await adapter.setStateAsync("errorState", {
-                    val: "PpInvalid",
-                    ack: true,
-                  });
-                  break;
-                case 8:
-                  await adapter.setStateAsync("errorState", {
-                    val: "GndInvalid",
-                    ack: true,
-                  });
-                  break;
-                case 9:
-                  await adapter.setStateAsync("errorState", {
-                    val: "ContactorStuck",
-                    ack: true,
-                  });
-                  break;
-                case 10:
-                  await adapter.setStateAsync("errorState", {
-                    val: "ContactorMiss",
-                    ack: true,
-                  });
-                  break;
-                case 11:
-                  await adapter.setStateAsync("errorState", {
-                    val: "FiUnknown",
-                    ack: true,
-                  });
-                  break;
-                case 12:
-                  await adapter.setStateAsync("errorState", {
-                    val: "Unknown",
-                    ack: true,
-                  });
-                  break;
-                case 13:
-                  await adapter.setStateAsync("errorState", {
-                    val: "Overtemp",
-                    ack: true,
-                  });
-                  break;
-                case 14:
-                  await adapter.setStateAsync("errorState", {
-                    val: "NoComm",
-                    ack: true,
-                  });
-                  break;
-                case 15:
-                  await adapter.setStateAsync("errorState", {
-                    val: "StatusLockStuckOpen",
-                    ack: true,
-                  });
-                  break;
-                case 16:
-                  await adapter.setStateAsync("errorState", {
-                    val: "StatusLockStuckLocked",
-                    ack: true,
-                  });
-                  break;
-              }
-              break;
-
-            case "ust":
-              timeout["ust"] = Date.now();
-              await createObjectAsync(
-                "cableLock",
-                "value",
-                "string",
-                true,
-                true,
-              );
-              createdStates.push("ust");
-
-              adapter.subscribeStates("cableLock");
-
-              switch (data2["status"][dataKeyToParse]) {
-                case 0:
-                  await adapter.setStateAsync("cableLock", {
-                    val: "Normal",
-                    ack: true,
-                  });
-                  break;
-                case 1:
-                  await adapter.setStateAsync("cableLock", {
-                    val: "AutoUnlock",
-                    ack: true,
-                  });
-                  break;
-                case 2:
-                  await adapter.setStateAsync("cableLock", {
-                    val: "AlwaysLock",
-                    ack: true,
-                  });
-                  break;
-              }
-              break;
-
-            case "eto":
-              timeout["eto"] = Date.now();
-              await createObjectAsync("energyCounterTotal", "value", "number");
-              createdStates.push("eto");
-              await adapter.setStateAsync("energyCounterTotal", {
-                val: data2["status"][dataKeyToParse],
-                ack: true,
-              });
-              break;
-
-            case "cae":
-              timeout["cae"] = Date.now();
-              await createObjectAsync("cae", "value", "boolean", true, true);
-              createdStates.push("cae");
-              adapter.subscribeStates("cae");
-              await adapter.setStateAsync("cae", {
-                val: data2["status"][dataKeyToParse],
-                ack: true,
-              });
-              break;
-
-            case "cak":
-              timeout["cak"] = Date.now();
-              await createObjectAsync("cak", "value", "string");
-              createdStates.push("cak");
-              await adapter.setStateAsync("cak", {
-                val: data2["status"][dataKeyToParse],
-                ack: true,
-              });
-              break;
-
-            case "lmo":
-              timeout["lmo"] = Date.now();
-              await createObjectAsync("mode", "value", "string", true, true);
-              createdStates.push("lmo");
-              adapter.subscribeStates("lmo");
-
-              switch (data2["status"][dataKeyToParse]) {
-                case 3:
-                  await adapter.setStateAsync("mode", {
-                    val: "Default",
-                    ack: true,
-                  });
-                  break;
-                case 4:
-                  await adapter.setStateAsync("mode", {
-                    val: "Eco",
-                    ack: true,
-                  });
-                  break;
-                case 5:
-                  await adapter.setStateAsync("mode", {
-                    val: "Next Trip",
-                    ack: true,
-                  });
-                  break;
-              }
-              break;
-
-            case "car":
-              timeout["car"] = Date.now();
-              await createObjectAsync("carConnected", "value", "string");
-              createdStates.push("car");
-              switch (data2["status"][dataKeyToParse]) {
-                case 0:
-                  await adapter.setStateAsync("carConnected", {
-                    val: "Unknown/Error",
-                    ack: true,
-                  });
-                  break;
-                case 1:
-                  await adapter.setStateAsync("carConnected", {
-                    val: "Idle",
-                    ack: true,
-                  });
-                  break;
-                case 2:
-                  await adapter.setStateAsync("carConnected", {
-                    val: "Charging",
-                    ack: true,
-                  });
-                  break;
-                case 3:
-                  await adapter.setStateAsync("carConnected", {
-                    val: "WaitCar",
-                    ack: true,
-                  });
-                  break;
-                case 4:
-                  await adapter.setStateAsync("carConnected", {
-                    val: "Complete",
-                    ack: true,
-                  });
-                  break;
-                case 5:
-                  await adapter.setStateAsync("carConnected", {
-                    val: "Error",
-                    ack: true,
-                  });
-                  break;
-              }
-              break;
-
-            case "alw":
-              timeout["alw"] = Date.now();
-              await createObjectAsync("AllowCharging", "value", "boolean");
-              createdStates.push("alw");
-
-              await adapter.setStateAsync("AllowCharging", {
-                val: data2["status"][dataKeyToParse],
-                ack: true,
-              });
-              break;
-
-            case "nrg":
-              timeout["nrg"] = Date.now();
-              createdStates.push("nrg");
-              await createObjectAsync("voltage1", "value", "number");
-              await adapter.setStateAsync("voltage1", {
-                val: data2["status"][dataKeyToParse][0],
-                ack: true,
-              });
-
-              await createObjectAsync("voltage2", "value", "number");
-              await adapter.setStateAsync("voltage2", {
-                val: data2["status"][dataKeyToParse][1],
-                ack: true,
-              });
-
-              await createObjectAsync("voltage3", "value", "number");
-              await adapter.setStateAsync("voltage3", {
-                val: data2["status"][dataKeyToParse][2],
-                ack: true,
-              });
-
-              await createObjectAsync("voltageN", "value", "number");
-              await adapter.setStateAsync("voltageN", {
-                val: data2["status"][dataKeyToParse][3],
-                ack: true,
-              });
-
-              await createObjectAsync("amps1", "value", "number");
-              await adapter.setStateAsync("amps1", {
-                val: data2["status"][dataKeyToParse][4],
-                ack: true,
-              });
-
-              await createObjectAsync("amps2", "value", "number");
-              await adapter.setStateAsync("amps2", {
-                val: data2["status"][dataKeyToParse][5],
-                ack: true,
-              });
-
-              await createObjectAsync("amps3", "value", "number");
-              await adapter.setStateAsync("amps3", {
-                val: data2["status"][dataKeyToParse][6],
-                ack: true,
-              });
-
-              await createObjectAsync("power1", "value", "number");
-              await adapter.setStateAsync("power1", {
-                val: data2["status"][dataKeyToParse][7] * 0.001,
-                ack: true,
-              });
-
-              await createObjectAsync("power2", "value", "number");
-              await adapter.setStateAsync("power2", {
-                val: data2["status"][dataKeyToParse][8] * 0.001,
-                ack: true,
-              });
-
-              await createObjectAsync("power3", "value", "number");
-              await adapter.setStateAsync("power3", {
-                val: data2["status"][dataKeyToParse][9] * 0.001,
-                ack: true,
-              });
-
-              await createObjectAsync("powerN", "value", "number");
-              await adapter.setStateAsync("powerN", {
-                val: data2["status"][dataKeyToParse][10] * 0.001,
-                ack: true,
-              });
-
-              await createObjectAsync("power", "value", "number");
-              await adapter.setStateAsync("power", {
-                val: data2["status"][dataKeyToParse][11] * 0.001,
-                ack: true,
-              });
-              break;
-
-            case "amp":
-              timeout["amp"] = Date.now();
-              await createObjectAsync("amp", "value", "number", true, true);
-              createdStates.push("amp");
-              adapter.subscribeStates("amp");
-              await adapter.setStateAsync("amp", {
-                val: data2["status"][dataKeyToParse],
-                ack: true,
-              });
-              break;
-
-            case "version":
-              timeout["version"] = Date.now();
-              await createObjectAsync("version", "value", "string");
-              createdStates.push("version");
-              await adapter.setStateAsync("version", {
-                val: data2["status"][dataKeyToParse],
-                ack: true,
-              });
-              break;
-
-            case "fwv":
-              timeout["fwv"] = Date.now();
-              await createObjectAsync("firmware", "value", "string");
-              createdStates.push("fwv");
-              await adapter.setStateAsync("firmware", {
-                val: data2["status"][dataKeyToParse],
-                ack: true,
-              });
-              break;
-
-            case "wss":
-              timeout["wss"] = Date.now();
-              await createObjectAsync("WifiSSID", "value", "string");
-              createdStates.push("wss");
-              await adapter.setStateAsync("WifiSSID", {
-                val: data2["status"][dataKeyToParse],
-                ack: true,
-              });
-              break;
-
-            case "upd":
-              timeout["upd"] = Date.now();
-              await createObjectAsync("updateAvailable", "value", "boolean");
-              createdStates.push("upd");
-
-              if (data2["status"][dataKeyToParse] === "0") {
-                await adapter.setStateAsync("updateAvailable", {
-                  val: false,
-                  ack: true,
-                });
-              } else {
-                await adapter.setStateAsync("updateAvailable", {
-                  val: true,
-                  ack: true,
-                });
-              }
-              break;
-
-            case "fna":
-              timeout["fna"] = Date.now();
-              await createObjectAsync("hostname", "value", "string");
-              createdStates.push("fna");
-              await adapter.setStateAsync("hostname", {
-                val: data2["status"][dataKeyToParse],
-                ack: true,
-              });
-              break;
-
-            case "ffna":
-              timeout["ffna"] = Date.now();
-              await createObjectAsync("serial", "value", "string");
-              createdStates.push("ffna");
-              await adapter.setStateAsync("serial", {
-                val: data2["status"][dataKeyToParse],
-                ack: true,
-              });
-              break;
-
-            case "utc":
-              timeout["utc"] = Date.now();
-              await createObjectAsync("TimeStamp", "value", "string");
-              createdStates.push("utc");
-              await adapter.setStateAsync("TimeStamp", {
-                val: data2["status"][dataKeyToParse],
-                ack: true,
-              });
-              break;
-
-            case "pvopt_averagePGrid":
-              timeout["pvopt_averagePGrid"] = Date.now();
-              await createObjectAsync("PVUselessPower", "value", "number");
-              createdStates.push("pvopt_averagePGrid");
-              await adapter.setStateAsync("PVUselessPower", {
-                val: data2["status"][dataKeyToParse],
-                ack: true,
-              });
-              break;
-
-            // No data-key found
-            default:
-              await checkCustomAddedParameters(
-                dataKeyToParse,
-                data2["status"][dataKeyToParse],
-              );
-              if (!useNormalParser) {
-                const dataJSON = JSON.stringify(
-                  data2["status"][dataKeyToParse],
-                );
-                if (dataJSON !== undefined) {
-                  timeout[dataKeyToParse] = Date.now();
-                  // @ts-expect-error Trust
-                  if (!isNaN(dataJSON)) {
-                    await createObjectAsync(dataKeyToParse, "value", "number");
-                  } else if (
-                    dataJSON.toLowerCase() === "true" ||
-                    dataJSON.toLowerCase() === "false"
-                  ) {
-                    await createObjectAsync(dataKeyToParse, "value", "boolean");
-                  } else if (dataJSON.includes("[")) {
-                    await createObjectAsync(dataKeyToParse, "value", "object");
-                  } else {
-                    if (dataKeyToParse === "rcd") {
-                      await createObjectAsync(
-                        dataKeyToParse,
-                        "value",
-                        "number",
-                      );
-                    } else {
-                      await createObjectAsync(
-                        dataKeyToParse,
-                        "value",
-                        "string",
-                      );
-                    }
-                  }
-                  if (
-                    dataJSON.includes(",") ||
-                    dataJSON.includes("[") ||
-                    dataJSON.includes("{")
-                  ) {
-                    await adapter.setStateAsync(dataKeyToParse, {
-                      val: dataJSON.toString(),
-                      ack: true,
-                    });
-                  } else {
-                    await adapter.setStateAsync(dataKeyToParse, {
-                      val: data2["status"][dataKeyToParse],
-                      ack: true,
-                    });
-                  }
-                  createdStates.push(dataKeyToParse.toString());
-                }
-              }
-          }
-        }
+    let type = "string";
+    let valueToSet = apiValue;
+
+    if (typeof apiValue === "number") {
+      type = "number";
+      valueToSet = apiValue;
+    } else if (typeof apiValue === "boolean") {
+      type = "boolean";
+    } else if (Array.isArray(apiValue) || typeof apiValue === "object") {
+      type = "string";
+      valueToSet = JSON.stringify(apiValue);
+    } else if (typeof apiValue === "string") {
+      if (!isNaN(parseFloat(apiValue))) {
+        type = "number";
+        valueToSet = parseFloat(apiValue);
       }
     }
 
-    async function checkCustomAddedParameters(key, data2) {
-      if (arrParam.length > 0) {
-        if (arrParam.includes(key)) {
-          if (key != null && data2 != null) {
-            if (createdStates.includes(key)) {
-              if (timeout[key] + 1000 * freq < Date.now()) {
-                timeout[key] = Date.now();
-                if (data2.toString().includes(",")) {
-                  await adapter.setStateAsync(key, {
-                    val: JSON.stringify(data2).toString(),
-                    ack: true,
-                  });
-                } else {
-                  await adapter.setStateAsync(key, { val: data2, ack: true });
-                }
-              }
-            } else {
-              timeout[key] = Date.now();
-              const dataJSON = JSON.stringify(data2);
-              // @ts-expect-error Trust
-              if (!isNaN(dataJSON)) {
-                await createObjectAsync(key, "value", "number");
-              } else if (
-                dataJSON.toLowerCase() === "true" ||
-                dataJSON.toLowerCase() === "false"
-              ) {
-                await createObjectAsync(key, "value", "boolean");
-              } else if (dataJSON.includes("[")) {
-                await createObjectAsync(key, "value", "object");
-              } else {
-                if (key === "rcd") {
-                  await createObjectAsync(key, "value", "number");
-                } else {
-                  await createObjectAsync(key, "value", "string");
-                }
-              }
-              if (dataJSON.includes(",")) {
-                await adapter.setStateAsync(key, {
-                  val: dataJSON.toString(),
-                  ack: true,
-                });
-              } else {
-                await adapter.setStateAsync(key, { val: data2, ack: true });
-              }
-              createdStates.push(key.toString());
-            }
-          }
-        }
-      }
+    if (apiKey === "rcd" && typeof apiValue !== "number") {
+      type = "number";
     }
 
-    async function checkUpTime() {
-      logger.debug("checkUpTime");
-      if (Date.now() - lastUpdate > 1000 * 60 * 2.5) {
-        logger.debug(
-          `checkUpTime: lastUpdate: ${lastUpdate.toLocaleString()} Date.now(): ${Date.now().toLocaleString()}`,
-        );
-        // Trying to reconnect
-        logger.info("Try to reconnect... Connection LOST!");
-        adapter.setState("info.connection", false, true);
-        createWsConnection();
-      }
+    if (!this.createdStatesRegistry.has(apiKey)) {
+      await this._ensureObjectExists(apiKey, "value", type, true, true); // Hier write=true gesetzt
+      this.subscribeStates(apiKey); // State abonnieren, da schreibbar
+      this.createdStatesRegistry.add(apiKey);
+    }
+
+    await this.setStateAsync(apiKey, { val: valueToSet, ack: true });
+    if (isCustomViaConfig) {
+      this._updateRateLimitTimestamp(apiKey);
     }
   }
 
-  /**
-   * Is called when adapter shuts down - callback has to be called under any circumstances!
-   *
-   * @param callback
-   */
+  _shouldUpdateByRateLimit(apiKey) {
+    const freqMillis = (this.config.freq || 10) * 1000; // Default to 10s if not set
+    return !(
+      this.rateLimitTimeouts[apiKey] &&
+      this.rateLimitTimeouts[apiKey] + freqMillis > Date.now()
+    );
+  }
+
+  _updateRateLimitTimestamp(apiKey) {
+    this.rateLimitTimeouts[apiKey] = Date.now();
+  }
+
+  _checkUptime() {
+    this.log.debug("Checking Wattpilot connection uptime...");
+    if (Date.now() - this.lastMessageTime > UPTIME_CHECK_INTERVAL_MS) {
+      this.log.warn(
+        `No message received for over ${UPTIME_CHECK_INTERVAL_MS / 1000 / 60} minutes. Attempting to reconnect.`,
+      );
+      this.setState("info.connection", false, true);
+      if (this.ws) {
+        this.ws.terminate(); // Force close existing connection
+      }
+      // Explicitly set ws to null so _createWsConnection doesn't think it's still connecting
+      this.ws = null;
+      this._createWsConnection();
+    } else {
+      // Send a ping-like request if protocol supports it or just keep connection alive
+      // For Wattpilot, regular status updates should keep it alive. If not, consider a periodic 'getAllValues' if available.
+      // For now, assume activity means connection is fine.
+      this.log.debug("Connection seems active.");
+    }
+  }
+
+  async _ensureObjectExists(id, role, type, read = true, write = false) {
+    try {
+      const obj = await this.getObjectAsync(id);
+      if (
+        !obj ||
+        obj.common.type !== type ||
+        obj.common.role !== role ||
+        obj.common.read !== read ||
+        obj.common.write !== write
+      ) {
+        await this.extendObjectAsync(id, {
+          type: "state",
+          common: {
+            name: id,
+            role,
+            type,
+            read,
+            write,
+            def: type === "number" ? 0 : type === "boolean" ? false : "",
+          },
+          native: {},
+        });
+        this.log.debug(`Object ${this.namespace}.${id} created/updated.`);
+      }
+    } catch (error) {
+      this.log.error(`Error ensuring object ${id}: ${error}`);
+      await this.setObjectNotExistsAsync(id, {
+        type: "state",
+        common: {
+          name: id,
+          role,
+          type,
+          read,
+          write,
+          def: type === "number" ? 0 : type === "boolean" ? false : "",
+        },
+        native: {},
+      });
+      this.log.debug(`Object ${this.namespace}.${id} created (fallback).`);
+    }
+  }
+
   onUnload(callback) {
     try {
-      ws.close();
-      ws.disconnect();
-      ws = null;
-      clearInterval(this.connectionUpTimeMonitor);
-      adapter.setState("info.connection", false, true);
+      this.log.info("Shutting down adapter...");
+      if (this.connectionUptimeMonitor) {
+        clearInterval(this.connectionUptimeMonitor);
+        this.connectionUptimeMonitor = null;
+      }
+      if (this.ws) {
+        this.ws.removeAllListeners();
+        this.ws.close();
+        this.ws = null;
+      }
+      this.setState("info.connection", false, true);
+      this.log.info("Cleanup complete. Adapter stopped.");
       callback();
     } catch (e) {
-      this.log.error(`Error onUnload: ${e}`);
+      this.log.error(`Error during onUnload: ${e.message}`);
       callback();
     }
   }
 
-  /**
-   * Is called if a subscribed state changes
-   *
-   * @param id
-   * @param state
-   */
   onStateChange(id, state) {
-    if (state && state.ack === false) {
-      if (id.includes("set_state")) {
-        counter = counter + 1;
-        let stateValue;
-        if (state.val === undefined) {
-          this.log.error("Wrong Value");
+    if (state && !state.ack) {
+      this.log.debug(
+        `State change command received for ${id}: ${JSON.stringify(state)}`
+      );
+
+      if (!this.hashedPassword) {
+        this.log.warn(
+          `Cannot send command for ${id}: not authenticated (hashedPassword missing).`
+        );
+        return;
+      }
+      if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+        this.log.warn(`Cannot send command for ${id}: WebSocket not open.`);
+        return;
+      }
+
+      const handler = this.STATE_CHANGE_HANDLERS[id];
+      if (handler) {
+        try {
+          handler.call(this, state);
+        } catch (e) {
+          this.log.error(
+            `Error processing state change for ${id}: ${e.message}`
+          );
         }
-        if (state.val) {
-          if (hashedPass !== undefined) {
-            // @ts-expect-error Trust
-            if (!state.val.includes(";")) {
-              this.log.error("Wrong Value");
-              return;
-            }
-            stateValue = state.val.toString().split(";");
-            let sendData = {};
-            if (stateValue[1] === "true") {
-              sendData = {
-                type: "setValue",
-                requestId: counter,
-                key: stateValue[0],
-                value: true,
-              };
-            } else if (stateValue[1] === "false") {
-              sendData = {
-                type: "setValue",
-                requestId: counter,
-                key: stateValue[0],
-                value: false,
-              };
-            } else {
-              // should also be checked against floats and stings, but I currently don't know how to do it
-              sendData = {
-                type: "setValue",
-                requestId: counter,
-                key: stateValue[0],
-                value: parseInt(stateValue[1]),
-              };
-            }
-            // @ts-expect-error Trust
-            const data = JSON.stringify(sendData);
-            const tf = createHmac("sha256", hashedPass)
-              .update(data)
-              .digest("hex");
-            const sendDataToSource = {
-              type: "securedMsg",
-              data: data,
-              requestId: `${counter.toString()}sm`,
-              hmac: tf,
-            };
-            ws.send(JSON.stringify(sendDataToSource));
-          }
-        } else {
-          this.log.error("Wrong Value");
-        }
-      } else if (id.includes("amp")) {
-        if (hashedPass !== undefined) {
-          counter = counter + 1;
-          // @ts-expect-error Trust
-          const json = {
-            type: "setValue",
-            requestId: counter,
-            key: "amp",
-            value: parseInt(state.val),
-          };
-          const tf = createHmac("sha256", hashedPass)
-            .update(JSON.stringify(json))
-            .digest("hex");
-          const sendDataToSource = {
-            type: "securedMsg",
-            data: JSON.stringify(json),
-            requestId: `${counter.toString()}sm`,
-            hmac: tf.toString(),
-          };
-          ws.send(JSON.stringify(sendDataToSource));
-        }
-      } else if (id.includes("cae")) {
-        if (hashedPass !== undefined) {
-          counter = counter + 1;
-          let ok = false;
-          if (state.val !== null) {
-            if (typeof state.val === "boolean") {
-              ok = true;
-            }
-            if (ok) {
-              const sendData = {
-                type: "setValue",
-                requestId: counter,
-                key: "cae",
-                value: state.val,
-              };
-              const tf = createHmac("sha256", hashedPass)
-                .update(JSON.stringify(sendData))
-                .digest("hex");
-              const sendDataToSource = {
-                type: "securedMsg",
-                data: JSON.stringify(sendData),
-                requestId: `${counter.toString()}sm`,
-                hmac: tf.toString(),
-              };
-              ws.send(JSON.stringify(sendDataToSource));
-            }
-          }
-        }
-      } else if (id.includes("AccessState")) {
-        if (hashedPass !== undefined) {
-          counter = counter + 1;
-          let mode = 42;
-          if (state.val !== null) {
-            if (state.val.toString().toLowerCase().includes("open")) {
-              mode = 0;
-            }
-            if (state.val.toString().toLowerCase().includes("wait")) {
-              mode = 1;
-            }
-            if (mode !== 42) {
-              const sendData = {
-                type: "setValue",
-                requestId: counter,
-                key: "acs",
-                value: mode,
-              };
-              const tf = createHmac("sha256", hashedPass)
-                .update(JSON.stringify(sendData))
-                .digest("hex");
-              const sendDataToSource = {
-                type: "securedMsg",
-                data: JSON.stringify(sendData),
-                requestId: `${counter.toString()}sm`,
-                hmac: tf.toString(),
-              };
-              ws.send(JSON.stringify(sendDataToSource));
-            }
-          }
-        }
-      } else if (id.includes("cableLock")) {
-        if (hashedPass !== undefined) {
-          counter = counter + 1;
-          let mode = 42;
-          if (state.val !== null) {
-            if (state.val.toString().toLowerCase().includes("normal")) {
-              mode = 0;
-            }
-            if (state.val.toString().toLowerCase().includes("autounlock")) {
-              mode = 1;
-            }
-            if (state.val.toString().toLowerCase().includes("alwayslock")) {
-              mode = 2;
-            }
-            if (mode !== 42) {
-              const sendData = {
-                type: "setValue",
-                requestId: counter,
-                key: "ust",
-                value: mode,
-              };
-              const tf = createHmac("sha256", hashedPass)
-                .update(JSON.stringify(sendData))
-                .digest("hex");
-              const sendDataToSource = {
-                type: "securedMsg",
-                data: JSON.stringify(sendData),
-                requestId: `${counter.toString()}sm`,
-                hmac: tf.toString(),
-              };
-              ws.send(JSON.stringify(sendDataToSource));
-            }
-          }
-        }
-      } else if (id.includes("set_power")) {
-        if (hashedPass !== undefined) {
-          counter = counter + 1;
-          // @ts-expect-error Trust
-          const json = {
-            type: "setValue",
-            requestId: counter,
-            key: "amp",
-            value: parseInt(state.val),
-          };
-          const tf = createHmac("sha256", hashedPass)
-            .update(JSON.stringify(json))
-            .digest("hex");
-          const sendDataToSource = {
-            type: "securedMsg",
-            data: JSON.stringify(json),
-            requestId: `${counter.toString()}sm`,
-            hmac: tf.toString(),
-          };
-          ws.send(JSON.stringify(sendDataToSource));
-        }
-      } else if (id.includes("set_mode")) {
-        if (hashedPass !== undefined) {
-          counter = counter + 1;
-          // @ts-expect-error Trust
-          const sendData = {
-            type: "setValue",
-            requestId: counter,
-            key: "lmo",
-            value: parseInt(state.val),
-          };
-          const tf = createHmac("sha256", hashedPass)
-            .update(JSON.stringify(sendData))
-            .digest("hex");
-          const sendDataToSource = {
-            type: "securedMsg",
-            data: JSON.stringify(sendData),
-            requestId: `${counter.toString()}sm`,
-            hmac: tf.toString(),
-          };
-          ws.send(JSON.stringify(sendDataToSource));
-        }
-      } else if (id.includes("mode")) {
-        if (hashedPass !== undefined) {
-          counter = counter + 1;
-          let mode = 0;
-          if (state.val !== null) {
-            if (state.val.toString().toLowerCase().includes("eco")) {
-              mode = 4;
-            }
-            if (state.val.toString().toLowerCase().includes("next trip")) {
-              mode = 5;
-            }
-            if (state.val.toString().toLowerCase().includes("default")) {
-              mode = 3;
-            }
-            if (mode !== 0) {
-              const sendData = {
-                type: "setValue",
-                requestId: counter,
-                key: "lmo",
-                value: mode,
-              };
-              const tf = createHmac("sha256", hashedPass)
-                .update(JSON.stringify(sendData))
-                .digest("hex");
-              const sendDataToSource = {
-                type: "securedMsg",
-                data: JSON.stringify(sendData),
-                requestId: `${counter.toString()}sm`,
-                hmac: tf.toString(),
-              };
-              ws.send(JSON.stringify(sendDataToSource));
-            }
-          }
-        }
+      } else {
+        // Generischer Handler für alle anderen States
+        this._handleGenericStateChange(id, state);
       }
     }
   }
-}
 
-/**
- * Is used to create not existing objects
- *
- * @param name
- * @param role
- * @param type
- * @param read
- * @param write
- */
-async function createObjectAsync(name, role, type, read = true, write = false) {
-  await adapter.setObjectNotExistsAsync(name, {
-    type: "state",
-    common: {
-      name: name,
-      role: role,
-      type: type,
-      read: read,
-      write: write, // Nice Line...
-    },
-    native: {},
-  });
+  // Neue generische Handler-Methode
+  _handleGenericStateChange(id, state) {
+    const idParts = id.split('.');
+    const stateName = idParts[idParts.length - 1];
+
+    // Zuerst prüfen, ob ein Eintrag in STATE_DEFINITIONS existiert
+    for (const apiKey in this.STATE_DEFINITIONS) {
+      if (this.STATE_DEFINITIONS[apiKey].id === stateName) {
+        let value = state.val;
+
+        // Umkehrung der valueMap verwenden, falls vorhanden
+        const stateDef = this.STATE_DEFINITIONS[apiKey];
+        if (stateDef.valueMap) {
+          const reverseMap = Object.entries(stateDef.valueMap).reduce((acc, [key, val]) => {
+            acc[val.toString().toLowerCase()] = key;
+            return acc;
+          }, {});
+
+          if (reverseMap[state.val.toString().toLowerCase()] !== undefined) {
+            value = reverseMap[state.val.toString().toLowerCase()];
+            // Wenn der Wert in der valueMap numerisch ist, konvertieren
+            if (!isNaN(parseFloat(value))) {
+              value = parseFloat(value);
+            }
+          }
+        }
+
+        this.log.info(`Sending command for ${stateName} (${apiKey}): ${value}`);
+        this._sendSecureCommand(apiKey, value);
+        return;
+      }
+    }
+
+    // Falls kein Eintrag in STATE_DEFINITIONS gefunden wurde, versuchen wir es als dynamischen State
+    this.log.info(`Sending dynamic command for ${stateName}: ${state.val}`);
+    this._sendSecureCommand(stateName, state.val);
+  }
+
+  _handleSetGenericStateCommand(state) {
+    // Expected format for set_state: "apiKey;value"
+    if (typeof state.val !== "string" || !state.val.includes(";")) {
+      this.log.error(
+        `Invalid value for set_state: "${state.val}". Expected format "key;value".`,
+      );
+      return;
+    }
+    const [key, valueStr] = state.val.split(";", 2);
+    let value;
+    if (valueStr.toLowerCase() === "true") {
+      value = true;
+    } else if (valueStr.toLowerCase() === "false") {
+      value = false;
+    } else if (!isNaN(parseFloat(valueStr)) && isFinite(valueStr)) {
+      value = parseFloat(valueStr);
+    } else if (
+      !isNaN(parseInt(valueStr, 10)) &&
+      parseInt(valueStr, 10).toString() === valueStr
+    ) {
+      value = parseInt(valueStr, 10);
+    } else {
+      value = valueStr;
+    } // Treat as string if not boolean or number
+
+    this._sendSecureCommand(key, value);
+  }
+
+  async _sendSecureCommand(apiKey, apiValue) {
+    if (
+      !this.hashedPassword ||
+      !this.ws ||
+      this.ws.readyState !== WebSocket.OPEN
+    ) {
+      this.log.warn(
+        `Cannot send secure command for ${apiKey}: Not ready or authenticated.`,
+      );
+      return;
+    }
+    this.messageCounter++;
+    const payload = {
+      type: MESSAGE_TYPE.SET_VALUE,
+      requestId: this.messageCounter,
+      key: apiKey,
+      value: apiValue,
+    };
+    const payloadString = JSON.stringify(payload);
+
+    const hmac = createHmac("sha256", this.hashedPassword)
+      .update(payloadString)
+      .digest("hex");
+
+    const messageToSend = {
+      type: MESSAGE_TYPE.SECURED_MSG,
+      data: payloadString,
+      requestId: `${this.messageCounter}sm`,
+      hmac: hmac,
+    };
+
+    this.log.debug(`Sending secure command: ${JSON.stringify(messageToSend)}`);
+    this.ws.send(JSON.stringify(messageToSend));
+  }
 }
 
 if (require.main !== module) {
-  /**
-   * @param [options]
-   */
   module.exports = (options) => new FroniusWattpilot(options);
 } else {
-  new FroniusWattpilot();
+  (() => new FroniusWattpilot())();
 }
