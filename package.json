@@ -33,7 +33,7 @@
     "url": "https://github.com/tim2zg/ioBroker.fronius-wattpilot"
   },
   "dependencies": {
-    "@iobroker/adapter-core": "^3.3.1",
+    "@iobroker/adapter-core": "^3.3.2",
     "ws": "^8.18.3"
   },
   "devDependencies": {
