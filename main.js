@@ -447,15 +447,30 @@ class FroniusWattpilot extends utils.Adapter {
 
       // Derive session key depending on configuration
       if (this.config.useBcrypt) {
-        // Deterministic bcrypt salt derived from sseToken
-        const saltBytes = createHash("sha256")
-          .update(this.sseToken)
-          .digest()
-          .subarray(0, 16); // 16 bytes
-        const salt22 = this._toBcryptBase64(saltBytes).substring(0, 22);
-        const salt = `$2a$12$${salt22}`; // cost 12
-        this.hashedPassword = bcrypt.hashSync(this.config.pass, salt); // use full bcrypt hash string
-        this.log.debug("Using bcrypt-derived session key.");
+        // Spec: sha256(password), salt from serial (HELLO serial) padded to 16 bytes, iterations=8
+        const passSha256Hex = createHash("sha256")
+          .update(this.config.pass)
+          .digest("hex");
+
+        const iterations = 8;
+        const serialStr = String(this.sseToken || "");
+        const serialBytes = Buffer.from(serialStr, "utf8");
+        const saltBuf = Buffer.alloc(16, 0);
+        if (serialBytes.length >= 16) {
+          // use the first 16 bytes
+          serialBytes.copy(saltBuf, 0, 0, 16);
+        } else {
+          // padStart-like: zeros at the start, serial right-aligned
+          const copyLen = serialBytes.length;
+          serialBytes.copy(saltBuf, 16 - copyLen, 0, copyLen);
+        }
+        const salt22 = bcrypt.encodeBase64(Array.from(saltBuf), 16);
+        const cost = iterations < 10 ? `0${iterations}` : `${iterations}`;
+        const salt = `$2a$${cost}$${salt22}`;
+        const fullHash = bcrypt.hashSync(passSha256Hex, salt);
+        // Use only the hash part (suffix after the salt), as per spec
+        this.hashedPassword = fullHash.substring(salt.length);
+        this.log.debug("Using bcrypt-derived session key (suffix only).");
       } else {
         const derivedKey = await pbkdf2Async(
           this.config.pass,
