@@ -33,9 +33,9 @@
     "url": "https://github.com/tim2zg/ioBroker.fronius-wattpilot"
   },
   "dependencies": {
-    "@iobroker/adapter-core": "^3.2.3",
+    "@iobroker/adapter-core": "^3.3.2",
     "bcryptjs": "^3.0.2",
-    "ws": "^8.18.0"
+    "ws": "^8.18.3"
   },
   "devDependencies": {
     "@alcalzone/release-script": "^3.8.0",
