@@ -4,6 +4,7 @@ const utils = require("@iobroker/adapter-core");
 const WebSocket = require("ws");
 const { createHash, createHmac, pbkdf2 } = require("crypto");
 const util = require("util");
+const bcrypt = require("bcryptjs");
 
 const pbkdf2Async = util.promisify(pbkdf2);
 
@@ -444,14 +445,43 @@ class FroniusWattpilot extends utils.Adapter {
         BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)).toString() +
         BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)).toString(); // Larger random number
 
-      const derivedKey = await pbkdf2Async(
-        this.config.pass,
-        this.sseToken,
-        100000,
-        256,
-        "sha512",
-      );
-      this.hashedPassword = derivedKey.toString("base64").substring(0, 32);
+      // Derive session key depending on configuration
+      if (this.config.useBcrypt) {
+        // Spec: sha256(password), salt from serial (HELLO serial) padded to 16 bytes, iterations=8
+        const passSha256Hex = createHash("sha256")
+          .update(this.config.pass)
+          .digest("hex");
+
+        const iterations = 8;
+        const serialStr = String(this.sseToken || "");
+        const serialBytes = Buffer.from(serialStr, "utf8");
+        const saltBuf = Buffer.alloc(16, 0);
+        if (serialBytes.length >= 16) {
+          // use the first 16 bytes
+          serialBytes.copy(saltBuf, 0, 0, 16);
+        } else {
+          // padStart-like: zeros at the start, serial right-aligned
+          const copyLen = serialBytes.length;
+          serialBytes.copy(saltBuf, 16 - copyLen, 0, copyLen);
+        }
+        const salt22 = bcrypt.encodeBase64(Array.from(saltBuf), 16);
+        const cost = iterations < 10 ? `0${iterations}` : `${iterations}`;
+        const salt = `$2a$${cost}$${salt22}`;
+        const fullHash = bcrypt.hashSync(passSha256Hex, salt);
+        // Use only the hash part (suffix after the salt), as per spec
+        this.hashedPassword = fullHash.substring(salt.length);
+        this.log.debug("Using bcrypt-derived session key (suffix only).");
+      } else {
+        const derivedKey = await pbkdf2Async(
+          this.config.pass,
+          this.sseToken,
+          100000,
+          256,
+          "sha512",
+        );
+        this.hashedPassword = derivedKey.toString("base64").substring(0, 32);
+        this.log.debug("Using PBKDF2-derived session key.");
+      }
 
       const hash1 = createHash("sha256")
         .update(message.token1 + this.hashedPassword)
@@ -873,6 +903,36 @@ class FroniusWattpilot extends utils.Adapter {
 
     this.log.debug(`Sending secure command: ${JSON.stringify(messageToSend)}`);
     this.ws.send(JSON.stringify(messageToSend));
+  }
+
+  // Helper: convert bytes to bcrypt base64 (./A-Za-z0-9) and trim to length
+  _toBcryptBase64(buf) {
+    const BCRYPT_BASE64_CODE =
+      "./ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let out = "";
+    let i = 0;
+    while (i < buf.length) {
+      const c1 = buf[i++];
+      out += BCRYPT_BASE64_CODE[(c1 >> 2) & 0x3f];
+      let c = (c1 & 0x03) << 4;
+      if (i >= buf.length) {
+        out += BCRYPT_BASE64_CODE[c & 0x3f];
+        break;
+      }
+      const c2 = buf[i++];
+      c |= (c2 >> 4) & 0x0f;
+      out += BCRYPT_BASE64_CODE[c & 0x3f];
+      c = (c2 & 0x0f) << 2;
+      if (i >= buf.length) {
+        out += BCRYPT_BASE64_CODE[c & 0x3f];
+        break;
+      }
+      const c3 = buf[i++];
+      c |= (c3 >> 6) & 0x03;
+      out += BCRYPT_BASE64_CODE[c & 0x3f];
+      out += BCRYPT_BASE64_CODE[c3 & 0x3f];
+    }
+    return out;
   }
 }
 
