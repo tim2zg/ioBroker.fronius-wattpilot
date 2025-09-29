@@ -4,6 +4,7 @@ const utils = require("@iobroker/adapter-core");
 const WebSocket = require("ws");
 const { createHash, createHmac, pbkdf2 } = require("crypto");
 const util = require("util");
+const bcrypt = require("bcryptjs");
 
 const pbkdf2Async = util.promisify(pbkdf2);
 
@@ -444,14 +445,28 @@ class FroniusWattpilot extends utils.Adapter {
         BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)).toString() +
         BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)).toString(); // Larger random number
 
-      const derivedKey = await pbkdf2Async(
-        this.config.pass,
-        this.sseToken,
-        100000,
-        256,
-        "sha512",
-      );
-      this.hashedPassword = derivedKey.toString("base64").substring(0, 32);
+      // Derive session key depending on configuration
+      if (this.config.useBcrypt) {
+        // Deterministic bcrypt salt derived from sseToken
+        const saltBytes = createHash("sha256")
+          .update(this.sseToken)
+          .digest()
+          .subarray(0, 16); // 16 bytes
+        const salt22 = this._toBcryptBase64(saltBytes).substring(0, 22);
+        const salt = `$2a$12$${salt22}`; // cost 12
+        this.hashedPassword = bcrypt.hashSync(this.config.pass, salt); // use full bcrypt hash string
+        this.log.debug("Using bcrypt-derived session key.");
+      } else {
+        const derivedKey = await pbkdf2Async(
+          this.config.pass,
+          this.sseToken,
+          100000,
+          256,
+          "sha512",
+        );
+        this.hashedPassword = derivedKey.toString("base64").substring(0, 32);
+        this.log.debug("Using PBKDF2-derived session key.");
+      }
 
       const hash1 = createHash("sha256")
         .update(message.token1 + this.hashedPassword)
@@ -873,6 +888,36 @@ class FroniusWattpilot extends utils.Adapter {
 
     this.log.debug(`Sending secure command: ${JSON.stringify(messageToSend)}`);
     this.ws.send(JSON.stringify(messageToSend));
+  }
+
+  // Helper: convert bytes to bcrypt base64 (./A-Za-z0-9) and trim to length
+  _toBcryptBase64(buf) {
+    const BCRYPT_BASE64_CODE =
+      "./ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let out = "";
+    let i = 0;
+    while (i < buf.length) {
+      const c1 = buf[i++];
+      out += BCRYPT_BASE64_CODE[(c1 >> 2) & 0x3f];
+      let c = (c1 & 0x03) << 4;
+      if (i >= buf.length) {
+        out += BCRYPT_BASE64_CODE[c & 0x3f];
+        break;
+      }
+      const c2 = buf[i++];
+      c |= (c2 >> 4) & 0x0f;
+      out += BCRYPT_BASE64_CODE[c & 0x3f];
+      c = (c2 & 0x0f) << 2;
+      if (i >= buf.length) {
+        out += BCRYPT_BASE64_CODE[c & 0x3f];
+        break;
+      }
+      const c3 = buf[i++];
+      c |= (c3 >> 6) & 0x03;
+      out += BCRYPT_BASE64_CODE[c & 0x3f];
+      out += BCRYPT_BASE64_CODE[c3 & 0x3f];
+    }
+    return out;
   }
 }
 

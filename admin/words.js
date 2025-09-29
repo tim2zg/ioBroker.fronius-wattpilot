@@ -110,5 +110,29 @@ systemDictionary = {
 		"pl": "zdecydowano tylko wtedy, gdy „Only read most”. sprawdzić",
 		"uk": "тільки потрібно, якщо \"Тільки прочитати більшість\". перевіряється",
 		"zh-cn": "只需要“最阅读”。 检查"
+	},
+	"Use bcrypt for authentication (instead of PBKDF2)": {
+		"en": "Use bcrypt for authentication (instead of PBKDF2)",
+		"de": "Bcrypt für die Authentifizierung verwenden (statt PBKDF2)",
+		"ru": "Использовать bcrypt для аутентификации (вместо PBKDF2)",
+		"pt": "Use bcrypt para autenticação (em vez de PBKDF2)",
+		"nl": "Gebruik bcrypt voor authenticatie (in plaats van PBKDF2)",
+		"fr": "Utiliser bcrypt pour l'authentification (au lieu de PBKDF2)",
+		"it": "Usa bcrypt per l'autenticazione (invece di PBKDF2)",
+		"es": "Usar bcrypt para autenticación (en lugar de PBKDF2)",
+		"pl": "Użyj bcrypt do uwierzytelniania (zamiast PBKDF2)",
+		"zh-cn": "使用 bcrypt 进行身份验证(代替 PBKDF2)"
+	},
+	"Enable only if your device/firmware requires bcrypt": {
+		"en": "Enable only if your device/firmware requires bcrypt",
+		"de": "Nur aktivieren, wenn Ihr Gerät/Firmware bcrypt benötigt",
+		"ru": "Включайте только если ваше устройство/прошивка требует bcrypt",
+		"pt": "Ativar apenas se seu dispositivo/firmware exigir bcrypt",
+		"nl": "Alleen inschakelen als uw apparaat/firmware bcrypt vereist",
+		"fr": "Activer uniquement si votre appareil/firmware nécessite bcrypt",
+		"it": "Abilita solo se il tuo dispositivo/firmware richiede bcrypt",
+		"es": "Habilitar solo si su dispositivo/firmware requiere bcrypt",
+		"pl": "Włącz tylko, jeśli urządzenie/firmware wymaga bcrypt",
+		"zh-cn": "仅在设备/固件需要 bcrypt 时启用"
 	}
 };

@@ -92,6 +92,12 @@
 				<label for="pass" class="translate">Password</label>
 			</div>
 
+			<div class="input-field col s12 m6 l4">
+				<input class="value" id="useBcrypt" type="checkbox"/>
+				<label for="useBcrypt" class="translate">Use bcrypt for authentication (instead of PBKDF2)</label><br/>
+				<span class="translate">Enable only if your device/firmware requires bcrypt</span><br/>
+			</div>
+
 			<div class="col s6 input-field">
 				<input type="number" class="value" id="freq" />
 				<label for="freq" class="translate">Interval to receive Wattpilot data (s)</label>

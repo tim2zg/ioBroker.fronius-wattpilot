@@ -34,6 +34,7 @@
   },
   "dependencies": {
     "@iobroker/adapter-core": "^3.2.3",
+    "bcryptjs": "^3.0.2",
     "ws": "^8.18.0"
   },
   "devDependencies": {

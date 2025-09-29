@@ -11,7 +11,7 @@
         "nl": "Herschrijven van de adapter\nToegevoegd vermogen om toestanden direct in te stellen\nToegevoegd vermogen om gemeenschappelijke staten direct in te stellen\nAlle problemen oplossen",
         "fr": "Réécriture de l'adaptateur\nAjout de la capacité de définir les états directement\nCapacité accrue de définir directement des états communs\nCorrection de tous les problèmes",
         "it": "Riscrittura dell'adattatore\nAggiunta la capacità di impostare gli stati direttamente\nAggiunta la capacità di impostare stati comuni direttamente\nRisolvi tutti i problemi",
-        "es": "Reescritura del adaptador\nPosibilidad de establecer estados directamente\nPosibilidad de establecer estados comunes directamente\nArreglar todos los problemas",
+        "es": "Reescritura del adaptador\nPosibilidad de establecer estados directamente\nPosibilidad de establecer estados comunes directamente\nArreglar todos os problemas",
         "pl": "Przepisanie adaptera\nDodano możliwość bezpośredniego ustawiania stanów\nDodano możliwość bezpośredniego ustalania wspólnych państw\nNapraw wszystkie problemy",
         "uk": "Перезапис адаптера\nДодана можливість встановлювати стани безпосередньо\nДодана можливість встановлювати загальні стани безпосередньо\nВиправлення всіх питань",
         "zh-cn": "重写适配器\n添加直接设置状态的能力\n添加直接设定共同状态的能力\n解决所有问题"
@@ -24,7 +24,7 @@
         "nl": "Een insect waar de ontvoerder een onbepaalde variabele\nQuality over Quantity (QoQ) Releases Vertaling:\nQuality over Quantity (QoQ) Releases Vertaling:",
         "fr": "Correction d'un bug où l'adaptateur utiliserait une variable undefined\nCorrection du bug #44\nCorrection du bug #43",
         "it": "Risolto un bug in cui l'adattatore avrebbe usato una variabile non definita\nCorretto bug #44\nCorretto bug #43",
-        "es": "Arreglado un fallo donde el adaptador utilizaría una variable indefinida\nError fijo #44\nError fijo #43",
+        "es": "Arreglado un fallo donde el adaptador utilizaría uma variável indefinida\nError fijo #44\nError fijo #43",
         "pl": "Błękitnym błędem, w którym adapter użył nie określonej zmiennej\nFixed bug #44 (ang.)\nFixed bug #43 (ang.)",
         "uk": "Виправлено помилку, де адаптер використовуватиме не визначену змінну\nВиправлена помилка #44\nВиправлена помилка #43",
         "zh-cn": "确定一个配制,使适应者使用一个未界定的变量。\n九. 固定的乙ug #44\n九、导 言.. 43"
@@ -63,7 +63,7 @@
         "nl": "Quality over Quantity (QoQ) Releases Vertaling:\nEen aantal problemen met de statische parochie\nQuality of life verbetering -- Je kunt nu de gemeenschappelijke staten rechtzetten! (setpower, zet ) zijn nog steeds beschikbaar voor compatibiliteit redenen en voor de dynamische parser mode",
         "fr": "Problème de timeout fixe en mode parser normal #(36), existe toujours en mode parser dynamique -- Cancer n'utilise pas de timeout (0)\nCorrection d'un certain nombre de questions concernant le mode de parseur statique\nAmélioration de la qualité de vie -- Cancer vous pouvez maintenant définir les états communs directement! (set_power, set_mode) sont toujours disponibles pour des raisons de compatibilité et pour le mode de parser dynamique",
         "it": "Emissione di timeout fissa in modalità parser normale #(36), esiste ancora in modalità parser dinamica --> non utilizzare timeout (0)\nRisolto un certo numero di problemi relativi alla modalità parser statico\nQualità dei miglioramenti della vita --> ora è possibile impostare gli stati comuni direttamente! (set_power, set_mode) sono ancora disponibili per motivi di compatibilità e per la modalità di parser dinamica",
-        "es": "Número de tiempo fijo en el modo de parser normal #(36), todavía existen en el modo de parser dinámico -- usuario no use timeout (0)\nArreglado una serie de cuestiones relativas al modo de parser estático\nCalidad de las mejoras de la vida -- usuario ahora puede establecer los estados comunes directamente! (set_power, set_mode) todavía están disponibles por razones de compatibilidad y para el modo de parser dinámico",
+        "es": "Número de tiempo fijo en el modo de parser normal #(36), todavía existen en el modo de parser dinámico -- usuario no use timeout (0)\nArreglado una serie de cuestiones relativas al modo de parser estático\nCalidad des mejoras de la vida -- usuario ahora puede establecer los estados comunes directamente! (set_power, set_mode) todavía están disponibles por razones de compatibilidad y para el modo de parser dinámico",
         "pl": "Kwestia czasoprzestrzeni w normalnym trybie parser #(36), wciąż istnieje w dynamicznym trybie parser – > nie używa czasu (0)\nZmieniło wiele problemów dotyczących trybu statycznego parsera\nJakość ulepszeń życia – -> Możesz teraz założyć stany powszechne. (set_power, set_mode) są nadal dostępne z powodów kompatybilności i dynamicznego trybu parsera",
         "uk": "Виправлено випуск часу в режимі нормального парсера #(36), як і раніше існують в режимі динамічного парсера --> використовувати без часу (0)\nВиправлено ряд питань щодо статичного режиму парсера\nЯкість поліпшення життя --> ви можете встановити загальні стани прямо! (set_power, set_mode) все ще доступні для причин сумісності і для динамічного режиму parser",
         "zh-cn": "正常包装形式(36)中固定的时间问题仍然存在于动态的序号—— 未使用(0)\n确定与静态投机方式有关的若干问题\n改善生活质量——你现在可以直接建立共同国家! (集群:能力,成套,因兼容和动态配件模式而仍然可用。)"
@@ -162,7 +162,8 @@
     "serial-number": "XXXXXXXX",
     "parser": true,
     "cloud": false,
-    "addParam": ""
+    "addParam": "",
+    "useBcrypt": false
   },
   "objects": [],
   "protectedNative": [
