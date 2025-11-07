@@ -138,6 +138,7 @@
     "extIcon": "https://raw.githubusercontent.com/tim2zg/ioBroker.fronius-wattpilot/main/admin/fronius-wattpilot.png",
     "readme": "https://github.com/tim2zg/ioBroker.fronius-wattpilot/blob/main/README.md",
     "loglevel": "info",
+    "tier": 2,
     "mode": "daemon",
     "type": "vehicle",
     "compact": true,
