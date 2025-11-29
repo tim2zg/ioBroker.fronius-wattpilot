@@ -135,6 +135,9 @@ The adapter connects to the Wattpilot's WebSocket interface and converts incomin
     ### **WORK IN PROGRESS**
 -->
 
+### **WORK IN PROGRESS**
+- Integrated working bcrypt algorithm
+
 ### 4.7.0 (2025-06-19)
 - Rewrite of the adapter
 - Added ability to set states directly
