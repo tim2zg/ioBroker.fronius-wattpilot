@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "fronius-wattpilot",
-    "version": "4.7.0",
+    "version": "4.8.0",
     "news": {
+      "4.8.0": {
+        "en": "Integrated working bcrypt algorithm",
+        "de": "Integrierter bcrypt-Algorithmus",
+        "ru": "Интегрированный рабочий алгоритм Bcrypt",
+        "pt": "Algoritmo de bcrypt de trabalho integrado",
+        "nl": "Geïntegreerd werkbcrypt-algoritme",
+        "fr": "Algorithme bcrypt intégré de travail",
+        "it": "Algoritmo di bcrypt di lavoro integrato",
+        "es": "Algoritmo de bcriptación de trabajo integrado",
+        "pl": "Zintegrowany algorytm pracy bcrypt",
+        "uk": "Інтегрований алгоритм обробки Bcrypt",
+        "zh-cn": "综合工作 bcrypt 算法"
+      },
       "4.7.0": {
         "en": "Rewrite of the adapter\nAdded ability to set states directly\nAdded ability to set common states directly\nFix all issues",
         "de": "Rewrite des Adapters\nZusätzlich Fähigkeit, Zustände direkt einzustellen\nZusätzlich Fähigkeit, gemeinsame Staaten direkt zu setzen\nAlle Probleme beheben",
@@ -80,19 +93,6 @@
         "pl": "Numer #29 (poziomy nie działają)",
         "uk": "Виправлено проблему #29 (податкові стани не працюють)",
         "zh-cn": "固定问题编号:第29号(习惯国家没有工作)"
-      },
-      "4.5.0": {
-        "en": "Fixed random log messages\nFixed a type conflict at the set_state state\nCommits from now on should be signed",
-        "de": "Feste zufällige Log-Nachrichten\nEin Typkonflikt im set_state-Zustand behoben\nMittelbindungen sollten ab sofort unterzeichnet werden",
-        "ru": "Исправлены случайные лог-сообщения\nИсправлен тип конфликта на установленном государстве\nРевизии отныне должны быть подписаны",
-        "pt": "Mensagens de log aleatórias fixas\nCorrigido um conflito de tipo no estado set_state\nOs compromissos a partir de agora devem ser assinados",
-        "nl": "Vertaling:\nEen soort conflict op de staatsstaat\nVanaf nu moeten we ondertekend worden",
-        "fr": "Messages journaliers aléatoires fixes\nCorrection d'un conflit de type à l'état set_state\nLes engagements à partir de maintenant devraient être signés",
-        "it": "Messaggi di registro casuali fissi\nRisolto un conflitto di tipo allo stato set_state\nGli impegni da ora in poi dovrebbero essere firmati",
-        "es": "Mensajes de registro al azar fijos\nArreglado un tipo de conflicto en el estado set_state\nLos compromisos de ahora en adelante deben ser firmados",
-        "pl": "Dane losowe\nZmierzył się z konfliktem typu w państwie stacjonarnym\nOd tego czasu należy podpisać",
-        "uk": "Виправлено випадкові повідомлення журналу\nВиправлено конфлікт типу на державному рівні\nВідтепер слід підписувати",
-        "zh-cn": "固定的随机的逻辑信息\nA. 固定的类型冲突\n现在应签署的各项承诺"
       }
     },
     "titleLang": {

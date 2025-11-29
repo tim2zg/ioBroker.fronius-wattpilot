@@ -134,8 +134,7 @@ The adapter connects to the Wattpilot's WebSocket interface and converts incomin
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
-
-### **WORK IN PROGRESS**
+### 4.8.0 (2025-11-29)
 - Integrated working bcrypt algorithm
 
 ### 4.7.0 (2025-06-19)
