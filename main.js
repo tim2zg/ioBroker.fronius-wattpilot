@@ -2,7 +2,7 @@
 
 const utils = require("@iobroker/adapter-core");
 const WebSocket = require("ws");
-const { createHash, createHmac } = require("crypto");
+const { createHash, createHmac, pbkdf2Sync } = require("crypto");
 const bcrypt = require("bcryptjs");
 
 // --- Constants ---
@@ -442,24 +442,40 @@ class FroniusWattpilot extends utils.Adapter {
       const ran = this.__randomBigInt(80);
       // === Python: "%064x" % ran
       let token3 = this.__formatHex(ran).slice(0, 32);
+      let hashedPassword;
 
-      // === Python: bcrypt hashing logic ===
-      const passwordHashSha256 = createHash("sha256")
-        .update(this.config.pass, "utf8")
-        .digest("hex");
+      if (message.hash === "pbkdf2") {
+        const iterations = 100000;
+        const keylen = 256;
+        const digest = "sha512";
+        const derivedKey = pbkdf2Sync(
+          this.config.pass,
+          this.sseToken,
+          iterations,
+          keylen,
+          digest,
+        );
+        this.hashedPassword = derivedKey.toString("base64").substring(0, 32);
+        hashedPassword = this.hashedPassword;
+      } else {
+        const passwordHashSha256 = createHash("sha256")
+          .update(this.config.pass, "utf8")
+          .digest("hex");
 
-      const serial = String(this.sseToken || "");
-      const serialB64 = this.__bcryptjs_encodeBase64(serial, 16);
+        const serial = String(this.sseToken || "");
+        const serialB64 = this.__bcryptjs_encodeBase64(serial, 16);
 
-      const iterations = 8;
-      let salt = "$2a$";
-      if (iterations < 10) {
-        salt += "0";
+        const iterations = 8;
+        let salt = "$2a$";
+        if (iterations < 10) {
+          salt += "0";
+        }
+        salt += `${iterations}$${serialB64}`;
+
+        const pwhash = bcrypt.hashSync(passwordHashSha256, salt);
+        this.hashedPassword = pwhash.slice(salt.length);
+        hashedPassword = this.hashedPassword;
       }
-      salt += `${iterations}$${serialB64}`;
-
-      const pwhash = bcrypt.hashSync(passwordHashSha256, salt);
-      const hashedPassword = pwhash.slice(salt.length);
 
       // === Python: hash1 = sha256(token1 + hashedPassword)
       const hash1 = createHash("sha256")
