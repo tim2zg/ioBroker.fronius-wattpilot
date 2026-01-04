@@ -13,5 +13,18 @@
     "Use bcrypt for authentication (instead of PBKDF2)": "Utilizza bcrypt per l'autenticazione (invece di PBKDF2)",
     "Use cloud to get data from the Pilot": "Utilizza il cloud per ottenere dati dal progetto pilota",
     "fronius-wattpilot adapter settings": "Impostazioni dell'adattatore per fronius-wattpilot",
+    "help_add_param": "necessario solo se è selezionato \"Leggi solo la maggior parte...\".",
+    "help_cloud": "Non raccomandato in un ambiente locale",
+    "help_parser": "Deseleziona per ottenere tutti i dati disponibili dall'API",
+    "help_use_bcrypt": "Abilita solo se il tuo dispositivo/firmware richiede bcrypt",
+    "label_add_param": "Fornire parametri aggiuntivi come elenco separato da punto e virgola (;).",
+    "label_cloud": "Utilizza il cloud per ottenere dati dal progetto pilota",
+    "label_freq": "Intervallo per ricevere i dati Wattpilot (s)",
+    "label_ip_host": "Indirizzo IP (se usi Cloud lascia vuoto)",
+    "label_parser": "Solo dati comuni",
+    "label_password": "Password",
+    "label_serial_number": "Numero di serie (solo in modalità Cloud)",
+    "label_use_bcrypt": "Utilizza bcrypt per l'autenticazione (invece di PBKDF2)",
+    "main_settings": "Impostazioni principali",
     "only needed if \"Only read most...\" is checked": "necessario solo se è selezionato \"Leggi solo la maggior parte...\"."
 }

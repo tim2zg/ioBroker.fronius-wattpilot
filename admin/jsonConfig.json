@@ -3,11 +3,11 @@
     "items": {
         "main": {
             "type": "panel",
-            "label": "Main settings",
+            "label": "main_settings",
             "items": {
                 "ip-host": {
                     "type": "text",
-                    "label": "IP-Address (If you use Cloud leave blank)",
+                    "label": "label_ip_host",
                     "placeholder": "192.168.1.100",
                     "xs": 12,
                     "sm": 12,
@@ -17,7 +17,7 @@
                 },
                 "serial-number": {
                     "type": "text",
-                    "label": "Serial Number (Only in Cloud mode)",
+                    "label": "label_serial_number",
                     "xs": 12,
                     "sm": 12,
                     "md": 6,
@@ -26,7 +26,7 @@
                 },
                 "pass": {
                     "type": "password",
-                    "label": "Password",
+                    "label": "label_password",
                     "xs": 12,
                     "sm": 12,
                     "md": 6,
@@ -35,8 +35,8 @@
                 },
                 "useBcrypt": {
                     "type": "checkbox",
-                    "label": "Use bcrypt for authentication (instead of PBKDF2)",
-                    "help": "Enable only if your device/firmware requires bcrypt",
+                    "label": "label_use_bcrypt",
+                    "help": "help_use_bcrypt",
                     "xs": 12,
                     "sm": 12,
                     "md": 6,
@@ -45,7 +45,7 @@
                 },
                 "freq": {
                     "type": "number",
-                    "label": "Interval to receive Wattpilot data (s)",
+                    "label": "label_freq",
                     "min": 1,
                     "xs": 12,
                     "sm": 12,
@@ -55,8 +55,8 @@
                 },
                 "parser": {
                     "type": "checkbox",
-                    "label": "Only Common Data",
-                    "help": "Uncheck to get any data available from API",
+                    "label": "label_parser",
+                    "help": "help_parser",
                     "xs": 12,
                     "sm": 12,
                     "md": 6,
@@ -65,8 +65,8 @@
                 },
                 "cloud": {
                     "type": "checkbox",
-                    "label": "Use cloud to get data from the Pilot",
-                    "help": "Not recommended in a local environment",
+                    "label": "label_cloud",
+                    "help": "help_cloud",
                     "xs": 12,
                     "sm": 12,
                     "md": 6,
@@ -75,8 +75,8 @@
                 },
                 "addParam": {
                     "type": "text",
-                    "label": "Give additional Parameters as semicolon (;) seperated list",
-                    "help": "only needed if \"Only read most...\" is checked",
+                    "label": "label_add_param",
+                    "help": "help_add_param",
                     "xs": 12,
                     "sm": 12,
                     "md": 6,
