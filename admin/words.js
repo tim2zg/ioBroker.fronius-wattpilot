@@ -134,5 +134,44 @@ systemDictionary = {
 		"es": "Habilitar solo si su dispositivo/firmware requiere bcrypt",
 		"pl": "Włącz tylko, jeśli urządzenie/firmware wymaga bcrypt",
 		"zh-cn": "仅在设备/固件需要 bcrypt 时启用"
+	},
+	"Interval to receive Wattpilot data (s)": {
+		"en": "Interval to receive Wattpilot data (s)",
+		"de": "Intervall zum Empfang von Wattpilot-Daten (s)",
+		"ru": "Интервал получения данных Wattpilot (с)",
+		"pt": "Intervalo para receber dados do Wattpilot (s)",
+		"nl": "Interval om Wattpilot-gegevens te ontvangen (s)",
+		"fr": "Intervalle pour recevoir les données Wattpilot (s)",
+		"it": "Intervallo per ricevere i dati Wattpilot (s)",
+		"es": "Intervalo para recibir datos de Wattpilot (s)",
+		"pl": "Interwał odbierania danych Wattpilot (s)",
+		"uk": "Інтервал отримання даних Wattpilot (с)",
+		"zh-cn": "接收 Wattpilot 数据的时间间隔 (s)"
+	},
+	"Only Common Data": {
+		"en": "Only Common Data",
+		"de": "Nur gängige Daten",
+		"ru": "Только общие данные",
+		"pt": "Apenas dados comuns",
+		"nl": "Alleen algemene gegevens",
+		"fr": "Uniquement les données communes",
+		"it": "Solo dati comuni",
+		"es": "Sólo datos comunes",
+		"pl": "Tylko wspólne dane",
+		"uk": "Тільки загальні дані",
+		"zh-cn": "仅通用数据"
+	},
+	"Give additional Parameters as semicolon (;) seperated list": {
+		"en": "Give additional Parameters as semicolon (;) seperated list",
+		"de": "Zusätzliche Parameter als Semikolon (;) getrennte Liste angeben",
+		"ru": "Укажите дополнительные параметры в виде списка, разделенного точкой с запятой (;)",
+		"pt": "Forneça parâmetros adicionais como uma lista separada por ponto e vírgula (;)",
+		"nl": "Geef aanvullende parameters op als een door puntkomma's (;) gescheiden lijst",
+		"fr": "Donnez des paramètres supplémentaires sous forme de liste séparée par des points-virgules (;)",
+		"it": "Fornire parametri aggiuntivi come elenco separato da punti e virgola (;)",
+		"es": "Proporcione parámetros adicionales como una lista separada por punto y coma (;)",
+		"pl": "Podaj dodatkowe parametry jako listę oddzieloną średnikami (;)",
+		"uk": "Надайте додаткові параметри у вигляді списку, розділеного крапкою з комою (;)",
+		"zh-cn": "以分号 (;) 分割的列表形式给出附加参数"
 	}
 };
