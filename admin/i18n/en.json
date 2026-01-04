@@ -1,0 +1,17 @@
+{
+    "fronius-wattpilot adapter settings": "Adapter settings for fronius-wattpilot",
+    "IP-Address (If you use Cloud leave blank)": "IP-Address (If you use Cloud leave blank)",
+    "Not recommended in a local environment": "Not recommended in a local environment",
+    "Only read most common data-points": "Only read most common data-points",
+    "Password": "Password",
+    "Serial Number (Only in Cloud mode)": "Serial Number (Only in Cloud mode)",
+    "Uncheck to get any data available from API": "Uncheck to get any data available from API",
+    "Use cloud to get data from the Pilot": "Use cloud to get data from the Pilot",
+    "only needed if \"Only read most...\" is checked": "only needed if \"Only read most...\" is checked",
+    "Use bcrypt for authentication (instead of PBKDF2)": "Use bcrypt for authentication (instead of PBKDF2)",
+    "Enable only if your device/firmware requires bcrypt": "Enable only if your device/firmware requires bcrypt",
+    "Interval to receive Wattpilot data (s)": "Interval to receive Wattpilot data (s)",
+    "Only Common Data": "Only Common Data",
+    "Give additional Parameters as semicolon (;) seperated list": "Give additional Parameters as semicolon (;) seperated list",
+    "Main settings": "Main settings"
+}

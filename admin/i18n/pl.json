@@ -1,0 +1,17 @@
+{
+    "Enable only if your device/firmware requires bcrypt": "Włącz tylko wtedy, gdy Twoje urządzenie/oprogramowanie sprzętowe wymaga bcrypt",
+    "Give additional Parameters as semicolon (;) seperated list": "Podaj dodatkowe parametry w postaci listy rozdzielonej średnikami (;).",
+    "IP-Address (If you use Cloud leave blank)": "Adres IP (jeśli korzystasz z chmury, pozostaw puste)",
+    "Interval to receive Wattpilot data (s)": "Interwał otrzymywania danych Wattpilot",
+    "Main settings": "Główne ustawienia",
+    "Not recommended in a local environment": "Niezalecane w środowisku lokalnym",
+    "Only Common Data": "Tylko wspólne dane",
+    "Only read most common data-points": "Czytaj tylko najczęstsze punkty danych",
+    "Password": "Hasło",
+    "Serial Number (Only in Cloud mode)": "Numer seryjny (tylko w trybie chmury)",
+    "Uncheck to get any data available from API": "Usuń zaznaczenie, aby uzyskać dostęp do danych z interfejsu API",
+    "Use bcrypt for authentication (instead of PBKDF2)": "Użyj bcrypt do uwierzytelnienia (zamiast PBKDF2)",
+    "Use cloud to get data from the Pilot": "Skorzystaj z chmury i pobierz dane z Pilota",
+    "fronius-wattpilot adapter settings": "Ustawienia adaptera dla fronius-wattpilot",
+    "only needed if \"Only read most...\" is checked": "potrzebne tylko wtedy, gdy zaznaczone jest „Tylko czytaj większość…”"
+}

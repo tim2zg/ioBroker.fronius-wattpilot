@@ -1,0 +1,17 @@
+{
+    "Enable only if your device/firmware requires bcrypt": "Увімкніть, лише якщо ваш пристрій/мікропрограма вимагає bcrypt",
+    "Give additional Parameters as semicolon (;) seperated list": "Укажіть додаткові параметри у вигляді списку, розділеного крапкою з комою (;).",
+    "IP-Address (If you use Cloud leave blank)": "IP-адреса (якщо ви використовуєте Cloud, залиште порожнім)",
+    "Interval to receive Wattpilot data (s)": "Інтервал отримання даних Wattpilot (s)",
+    "Main settings": "Основні налаштування",
+    "Not recommended in a local environment": "Не рекомендується в місцевому середовищі",
+    "Only Common Data": "Лише загальні дані",
+    "Only read most common data-points": "Читайте лише найпоширеніші дані",
+    "Password": "Пароль",
+    "Serial Number (Only in Cloud mode)": "Серійний номер (тільки в хмарному режимі)",
+    "Uncheck to get any data available from API": "Зніміть прапорець, щоб отримати дані з API",
+    "Use bcrypt for authentication (instead of PBKDF2)": "Використовуйте bcrypt для автентифікації (замість PBKDF2)",
+    "Use cloud to get data from the Pilot": "Використовуйте хмару для отримання даних від Pilot",
+    "fronius-wattpilot adapter settings": "Налаштування адаптера для fronius-wattpilot",
+    "only needed if \"Only read most...\" is checked": "потрібен, лише якщо позначено «Лише читати більшість...»."
+}

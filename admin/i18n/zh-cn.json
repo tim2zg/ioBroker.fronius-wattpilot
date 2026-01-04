@@ -1,0 +1,17 @@
+{
+    "Enable only if your device/firmware requires bcrypt": "仅当您的设备/固件需要 bcrypt 时启用",
+    "Give additional Parameters as semicolon (;) seperated list": "以分号 (;) 分隔列表的形式给出附加参数",
+    "IP-Address (If you use Cloud leave blank)": "IP 地址（如果您使用云，则留空）",
+    "Interval to receive Wattpilot data (s)": "接收 Wattpilot 数据的时间间隔（秒）",
+    "Main settings": "主要设置",
+    "Not recommended in a local environment": "不推荐在本地环境中使用",
+    "Only Common Data": "仅通用数据",
+    "Only read most common data-points": "只读取最常见的数据点",
+    "Password": "密码",
+    "Serial Number (Only in Cloud mode)": "序列号（仅在云模式下）",
+    "Uncheck to get any data available from API": "取消选中即可从 API 获取任何可用数据",
+    "Use bcrypt for authentication (instead of PBKDF2)": "使用 bcrypt 进行身份验证（而不是 PBKDF2）",
+    "Use cloud to get data from the Pilot": "使用云从 Pilot 获取数据",
+    "fronius-wattpilot adapter settings": "fronius-wattpilot 的适配器设置",
+    "only needed if \"Only read most...\" is checked": "仅当选中“仅阅读最多...”时才需要"
+}
