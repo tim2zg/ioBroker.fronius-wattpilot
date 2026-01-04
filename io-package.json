@@ -147,8 +147,7 @@
     "connectionType": "local",
     "dataSource": "poll",
     "adminUI": {
-      "config": "json",
-      "i18n": true
+      "config": "json"
     },
     "globalDependencies": [
       {
