@@ -22,9 +22,9 @@
 - Created "examples"-directory for sample applications
 - Added some translations
 - Renamed checkbox "Parser" to something more intuitive
-- Fixxed #4: Datapoint "map" now gets created correctly
-- Fixxed #5: Password-characters are no longer visible
-- Fixxed type conflict of cableType
+- Fixed #4: Datapoint "map" now gets created correctly
+- Fixed #5: Password-characters are no longer visible
+- Fixed type conflict of cableType
 
 ### 2.2.4 (2022-09-01)
 - SebastianHanz fixed infinite RAM-usage
