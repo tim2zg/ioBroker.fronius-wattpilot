@@ -95,6 +95,8 @@ class FroniusWattpilot extends utils.Adapter {
     this.authRetryMethod = null;
     this.lastAuthMethod = null;
     this.authRetryTimer = null;
+    this.statusFrameCount = 0;
+    this.firstStatusKeysLogged = false;
 
     this.STATE_DEFINITIONS = this._getStaticStateDefinitions();
     this.STATE_CHANGE_HANDLERS = this._getStaticStateChangeHandlers();
@@ -334,7 +336,9 @@ class FroniusWattpilot extends utils.Adapter {
     this.messageCounter = 0; // Reset counter for new connection
 
     this.ws.on("open", () => {
-      this.log.debug("WebSocket connection opened. Waiting for messages.");
+      this.log.debug(
+        `WebSocket connection opened. readyState=${this.ws ? this.ws.readyState : "n/a"}. Waiting for messages.`,
+      );
       // Connection state will be set to true upon successful authentication
     });
 
@@ -364,6 +368,9 @@ class FroniusWattpilot extends utils.Adapter {
     this.ws.on("close", (code, reason) => {
       this.log.info(
         `WebSocket connection closed. Code: ${code}, Reason: ${reason ? reason.toString() : "N/A"}`,
+      );
+      this.log.debug(
+        `Close state: lastMessageTime=${this.lastMessageTime}, statusFrames=${this.statusFrameCount}, authMethod=${this.lastAuthMethod || "n/a"}, retry=${this.authRetryMethod || "n/a"}`,
       );
       this.setState("info.connection", false, true);
       this.sseToken = null;
@@ -408,7 +415,9 @@ class FroniusWattpilot extends utils.Adapter {
       case MESSAGE_TYPE.AUTH_SUCCESS:
         this._clearAuthRetryState();
         await this.setState("info.connection", true, true);
-        this.log.info("Authentication successful. Connected to Wattpilot.");
+        this.log.info(
+          "Authentication successful. Connected to Wattpilot. Waiting for first status frame.",
+        );
         break;
       case MESSAGE_TYPE.AUTH_ERROR:
         this._handleAuthErrorRetry();
@@ -425,6 +434,10 @@ class FroniusWattpilot extends utils.Adapter {
       case MESSAGE_TYPE.FULL_STATUS:
       case MESSAGE_TYPE.DELTA_STATUS:
         if (message.status && typeof message.status === "object") {
+          this.statusFrameCount++;
+          this.log.info(
+            `Received ${message.type} frame #${this.statusFrameCount} with ${Object.keys(message.status).length} keys.`,
+          );
           await this._parseStatusMessage(message.status);
         }
         break;
@@ -437,6 +450,9 @@ class FroniusWattpilot extends utils.Adapter {
       default:
         // Assume it's a status update if it has a 'status' property
         if (message.status && typeof message.status === "object") {
+          this.log.debug(
+            `Unhandled structured message type ${message.type || "Unknown"} with status keys: ${Object.keys(message.status).join(", ")}`,
+          );
           await this._parseStatusMessage(message.status);
         } else {
           this.log.warn(
@@ -526,6 +542,13 @@ class FroniusWattpilot extends utils.Adapter {
 
   async _parseStatusMessage(statusData) {
     const enableDynamic = this.config.parser === false; // 'parser' in config means 'strict', so false means dynamic
+
+    if (!this.firstStatusKeysLogged) {
+      this.log.info(
+        `First status frame keys: ${Object.keys(statusData).join(", ")}`,
+      );
+      this.firstStatusKeysLogged = true;
+    }
 
     for (const apiKey in statusData) {
       if (!Object.prototype.hasOwnProperty.call(statusData, apiKey)) {
@@ -779,6 +802,8 @@ class FroniusWattpilot extends utils.Adapter {
         this.ws = null;
       }
       this._clearAuthRetryState();
+      this.statusFrameCount = 0;
+      this.firstStatusKeysLogged = false;
       this.setState("info.connection", false, true);
       this.log.info("Cleanup complete. Adapter stopped.");
       callback();
