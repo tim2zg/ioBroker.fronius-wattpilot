@@ -12,7 +12,7 @@ describe("FroniusWattpilot auth selection", () => {
         this.log = {
           debug() {},
           info() {},
-          warn() {},
+          warn() {}, 
           error() {},
         };
       }

@@ -2,8 +2,8 @@
 
 const utils = require("@iobroker/adapter-core");
 const WebSocket = require("ws");
-const { createHmac } = require("node:crypto");
-const { computeAuthResponse } = require("./lib/wattpilot-auth");
+const { createHash, createHmac, pbkdf2Sync } = require("node:crypto");
+const bcrypt = require("bcryptjs");
 
 // --- Constants ---
 const ADAPTER_NAME = "fronius-wattpilot";
@@ -31,6 +31,147 @@ const DEFAULT_PASSWORD_PLACEHOLDER = "Password";
 
 const UPTIME_CHECK_INTERVAL_MS = 1000 * 60 * 2.5; // 2.5 minutes
 const WEBSOCKET_HANDSHAKE_TIMEOUT_MS = 5000;
+
+function deriveHashedPassword(password, serial, method) {
+  if (!password) {
+    throw new Error("Password is required.");
+  }
+  if (!serial) {
+    throw new Error("Serial is required.");
+  }
+
+  if (method === "bcrypt") {
+    const passwordHashSha256 = createHash("sha256")
+      .update(password, "utf8")
+      .digest("hex");
+
+    const serialB64 = encodeSerialBase64(String(serial), 16);
+    const salt = `$2a$08$${serialB64}`;
+    const pwhash = bcrypt.hashSync(passwordHashSha256, salt);
+    return pwhash.slice(salt.length);
+  }
+
+  if (method === "pbkdf2") {
+    return pbkdf2Sync(password, String(serial), 100000, 256, "sha512")
+      .toString("base64")
+      .substring(0, 32);
+  }
+
+  throw new Error(`Unsupported auth method: ${method}`);
+}
+
+function computeAuthResponse({
+  password,
+  serial,
+  token1,
+  token2,
+  method,
+  token3,
+}) {
+  if (!token1 || !token2) {
+    throw new Error("token1 and token2 are required.");
+  }
+
+  const derivedPassword = deriveHashedPassword(password, serial, method);
+  const finalToken3 = token3 || generateToken3();
+
+  const hash1 = createHash("sha256")
+    .update(token1 + derivedPassword)
+    .digest("hex");
+  const hash = createHash("sha256")
+    .update(finalToken3 + token2 + hash1)
+    .digest("hex");
+
+  return {
+    token3: finalToken3,
+    hash,
+    hashedPassword: derivedPassword,
+  };
+}
+
+function computeAuthCandidates({ password, serial, token1, token2, token3 }) {
+  return {
+    pbkdf2: computeAuthResponse({
+      password,
+      serial,
+      token1,
+      token2,
+      method: "pbkdf2",
+      token3,
+    }),
+    bcrypt: computeAuthResponse({
+      password,
+      serial,
+      token1,
+      token2,
+      method: "bcrypt",
+      token3,
+    }),
+  };
+}
+
+function generateToken3() {
+  let result = "";
+  for (let i = 0; i < 80; i++) {
+    const digit =
+      i === 0
+        ? Math.floor(Math.random() * 9) + 1
+        : Math.floor(Math.random() * 10);
+    result += digit.toString();
+  }
+
+  return BigInt(result).toString(16).padStart(64, "0").slice(0, 32);
+}
+
+function encodeSerialBase64(serial, length) {
+  if (!/^\d+$/.test(serial)) {
+    throw new Error(`Check serial string - should be digits only: ${serial}`);
+  }
+
+  const vals = Array.from(serial).map((ch) => ch.charCodeAt(0) - 48);
+  const b = Buffer.concat([
+    Buffer.alloc(length - vals.length, 0),
+    Buffer.from(vals),
+  ]);
+  return bcryptBase64Encode(b, length);
+}
+
+function bcryptBase64Encode(buffer, length) {
+  const BASE64_CODE =
+    "./ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let off = 0;
+  const rs = [];
+
+  if (length <= 0 || length > buffer.length) {
+    throw new Error(`Illegal len: ${length}`);
+  }
+
+  while (off < length) {
+    let c1 = buffer[off++] & 0xff;
+    rs.push(BASE64_CODE[(c1 >> 2) & 0x3f]);
+    c1 = (c1 & 0x03) << 4;
+    if (off >= length) {
+      rs.push(BASE64_CODE[c1 & 0x3f]);
+      break;
+    }
+
+    let c2 = buffer[off++] & 0xff;
+    c1 |= (c2 >> 4) & 0x0f;
+    rs.push(BASE64_CODE[c1 & 0x3f]);
+    c1 = (c2 & 0x0f) << 2;
+    if (off >= length) {
+      rs.push(BASE64_CODE[c1 & 0x3f]);
+      break;
+    }
+
+    c2 = buffer[off++] & 0xff;
+    c1 |= (c2 >> 6) & 0x03;
+    rs.push(BASE64_CODE[c1 & 0x3f]);
+    rs.push(BASE64_CODE[c2 & 0x3f]);
+  }
+
+  return rs.join("");
+}
 
 // Mappings for state values
 const ACCESS_STATE_MAP_API_TO_VAL = { 0: "Open", 1: "Wait" };
@@ -95,8 +236,6 @@ class FroniusWattpilot extends utils.Adapter {
     this.authRetryMethod = null;
     this.lastAuthMethod = null;
     this.authRetryTimer = null;
-    this.statusFrameCount = 0;
-    this.firstStatusKeysLogged = false;
 
     this.STATE_DEFINITIONS = this._getStaticStateDefinitions();
     this.STATE_CHANGE_HANDLERS = this._getStaticStateChangeHandlers();
@@ -336,9 +475,7 @@ class FroniusWattpilot extends utils.Adapter {
     this.messageCounter = 0; // Reset counter for new connection
 
     this.ws.on("open", () => {
-      this.log.debug(
-        `WebSocket connection opened. readyState=${this.ws ? this.ws.readyState : "n/a"}. Waiting for messages.`,
-      );
+      this.log.debug("WebSocket connection opened. Waiting for messages.");
       // Connection state will be set to true upon successful authentication
     });
 
@@ -347,11 +484,13 @@ class FroniusWattpilot extends utils.Adapter {
       try {
         const messageString = data.toString();
         const messageData = JSON.parse(messageString);
-        Promise.resolve(this._handleWebSocketMessage(messageData)).catch((err) => {
-          this.log.error(
-            `Unhandled error while processing message ${messageData.type || "unknown"}: ${err.message}`,
-          );
-        });
+        Promise.resolve(this._handleWebSocketMessage(messageData)).catch(
+          (err) => {
+            this.log.error(
+              `Unhandled error while processing message ${messageData.type || "unknown"}: ${err.message}`,
+            );
+          },
+        );
       } catch (e) {
         this.log.error(
           `Error parsing JSON message: ${e.message}. Data: ${data.toString()}`,
@@ -368,9 +507,6 @@ class FroniusWattpilot extends utils.Adapter {
     this.ws.on("close", (code, reason) => {
       this.log.info(
         `WebSocket connection closed. Code: ${code}, Reason: ${reason ? reason.toString() : "N/A"}`,
-      );
-      this.log.debug(
-        `Close state: lastMessageTime=${this.lastMessageTime}, statusFrames=${this.statusFrameCount}, authMethod=${this.lastAuthMethod || "n/a"}, retry=${this.authRetryMethod || "n/a"}`,
       );
       this.setState("info.connection", false, true);
       this.sseToken = null;
@@ -415,9 +551,7 @@ class FroniusWattpilot extends utils.Adapter {
       case MESSAGE_TYPE.AUTH_SUCCESS:
         this._clearAuthRetryState();
         await this.setState("info.connection", true, true);
-        this.log.info(
-          "Authentication successful. Connected to Wattpilot. Waiting for first status frame.",
-        );
+        this.log.info("Authentication successful. Connected to Wattpilot.");
         break;
       case MESSAGE_TYPE.AUTH_ERROR:
         this._handleAuthErrorRetry();
@@ -434,10 +568,6 @@ class FroniusWattpilot extends utils.Adapter {
       case MESSAGE_TYPE.FULL_STATUS:
       case MESSAGE_TYPE.DELTA_STATUS:
         if (message.status && typeof message.status === "object") {
-          this.statusFrameCount++;
-          this.log.info(
-            `Received ${message.type} frame #${this.statusFrameCount} with ${Object.keys(message.status).length} keys.`,
-          );
           await this._parseStatusMessage(message.status);
         }
         break;
@@ -450,9 +580,6 @@ class FroniusWattpilot extends utils.Adapter {
       default:
         // Assume it's a status update if it has a 'status' property
         if (message.status && typeof message.status === "object") {
-          this.log.debug(
-            `Unhandled structured message type ${message.type || "Unknown"} with status keys: ${Object.keys(message.status).join(", ")}`,
-          );
           await this._parseStatusMessage(message.status);
         } else {
           this.log.warn(
@@ -502,9 +629,7 @@ class FroniusWattpilot extends utils.Adapter {
 
     try {
       // === Python: ran = random.randrange(10**80)
-      const ran = this.__randomBigInt(80);
-      // === Python: "%064x" % ran
-      let token3 = this.__formatHex(ran).slice(0, 32);
+      let token3 = generateToken3();
       const useBcrypt = this._shouldUseBcryptAuthentication(message);
       this.lastAuthMethod = useBcrypt ? "bcrypt" : "pbkdf2";
       this.log.info(
@@ -542,13 +667,6 @@ class FroniusWattpilot extends utils.Adapter {
 
   async _parseStatusMessage(statusData) {
     const enableDynamic = this.config.parser === false; // 'parser' in config means 'strict', so false means dynamic
-
-    if (!this.firstStatusKeysLogged) {
-      this.log.info(
-        `First status frame keys: ${Object.keys(statusData).join(", ")}`,
-      );
-      this.firstStatusKeysLogged = true;
-    }
 
     for (const apiKey in statusData) {
       if (!Object.prototype.hasOwnProperty.call(statusData, apiKey)) {
@@ -802,8 +920,6 @@ class FroniusWattpilot extends utils.Adapter {
         this.ws = null;
       }
       this._clearAuthRetryState();
-      this.statusFrameCount = 0;
-      this.firstStatusKeysLogged = false;
       this.setState("info.connection", false, true);
       this.log.info("Cleanup complete. Adapter stopped.");
       callback();
@@ -1006,76 +1122,6 @@ class FroniusWattpilot extends utils.Adapter {
       this.authRetryTimer = null;
     }
   }
-
-  __randomBigInt(digits) {
-    let result = "";
-    const digitsNum = typeof digits === "bigint" ? Number(digits) : digits;
-    for (let i = 0; i < digitsNum; i++) {
-      let digit =
-        i === 0
-          ? Math.floor(Math.random() * 9) + 1
-          : Math.floor(Math.random() * 10);
-      result += digit.toString();
-    }
-    return BigInt(result);
-  }
-
-  __formatHex(bigint) {
-    let hex = bigint.toString(16);
-    return hex.padStart(64, "0");
-  }
-
-  __bcryptjs_encodeBase64(s, length) {
-    if (/^\d+$/.test(s)) {
-      const vals = Array.from(s).map((ch) => ch.charCodeAt(0) - 48);
-      const b = Buffer.concat([
-        Buffer.alloc(length - vals.length, 0),
-        Buffer.from(vals),
-      ]);
-      return this.__bcryptjs_base64_encode(b, length);
-    }
-    this.log.error(
-      `__bcryptjs_encodeBase64: check serial string - should be digits only: ${s}`,
-    );
-    throw new Error(`Check serial string - should be digits only: ${s}`);
-  }
-
-  __bcryptjs_base64_encode(b, length) {
-    const BASE64_CODE =
-      "./ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    let off = 0;
-    let rs = [];
-
-    if (length <= 0 || length > b.length) {
-      throw new Error(`Illegal len: ${length}`);
-    }
-
-    while (off < length) {
-      let c1 = b[off++] & 0xff;
-      rs.push(BASE64_CODE[(c1 >> 2) & 0x3f]);
-      c1 = (c1 & 0x03) << 4;
-      if (off >= length) {
-        rs.push(BASE64_CODE[c1 & 0x3f]);
-        break;
-      }
-
-      let c2 = b[off++] & 0xff;
-      c1 |= (c2 >> 4) & 0x0f;
-      rs.push(BASE64_CODE[c1 & 0x3f]);
-      c1 = (c2 & 0x0f) << 2;
-      if (off >= length) {
-        rs.push(BASE64_CODE[c1 & 0x3f]);
-        break;
-      }
-
-      c2 = b[off++] & 0xff;
-      c1 |= (c2 >> 6) & 0x03;
-      rs.push(BASE64_CODE[c1 & 0x3f]);
-      rs.push(BASE64_CODE[c2 & 0x3f]);
-    }
-
-    return rs.join("");
-  }
 }
 
 if (require.main !== module) {
@@ -1083,3 +1129,8 @@ if (require.main !== module) {
 } else {
   (() => new FroniusWattpilot())();
 }
+
+module.exports.computeAuthCandidates = computeAuthCandidates;
+module.exports.computeAuthResponse = computeAuthResponse;
+module.exports.deriveHashedPassword = deriveHashedPassword;
+module.exports.generateToken3 = generateToken3;

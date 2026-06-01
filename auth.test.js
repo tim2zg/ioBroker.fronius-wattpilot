@@ -4,7 +4,7 @@ const { expect } = require("chai");
 const {
   computeAuthCandidates,
   computeAuthResponse,
-} = require("./lib/wattpilot-auth");
+} = require("./main.js");
 
 describe("Wattpilot auth helper", () => {
   const base = {
