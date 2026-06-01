@@ -90,6 +90,9 @@ class FroniusWattpilot extends utils.Adapter {
     this.connectionUptimeMonitor = null;
     this.createdStatesRegistry = new Set(); // Tracks API keys for which states have been created
     this.customParamsToParse = []; // Parsed from config.addParam
+    this.authRetryMethod = null;
+    this.lastAuthMethod = null;
+    this.authRetryTimer = null;
 
     this.STATE_DEFINITIONS = this._getStaticStateDefinitions();
     this.STATE_CHANGE_HANDLERS = this._getStaticStateChangeHandlers();
@@ -97,7 +100,7 @@ class FroniusWattpilot extends utils.Adapter {
     this.on("ready", this.onReady.bind(this));
     this.on("stateChange", this.onStateChange.bind(this));
     this.on("unload", this.onUnload.bind(this));
-  } 
+  }
 
   _getStaticStateDefinitions() {
     // Definitions for known API keys from the Wattpilot
@@ -359,6 +362,20 @@ class FroniusWattpilot extends utils.Adapter {
       this.setState("info.connection", false, true);
       this.sseToken = null;
       this.hashedPassword = null; // Invalidate hash on disconnect
+      if (this.authRetryMethod) {
+        if (this.authRetryTimer) {
+          clearTimeout(this.authRetryTimer);
+        }
+        this.authRetryTimer = setTimeout(() => {
+          this.authRetryTimer = null;
+          if (this.authRetryMethod) {
+            this.log.warn(
+              `Retrying authentication with ${this.authRetryMethod}.`,
+            );
+            this._createWsConnection();
+          }
+        }, 1000);
+      }
       // Reconnect logic is handled by _checkUptime
     });
   }
@@ -383,10 +400,12 @@ class FroniusWattpilot extends utils.Adapter {
         await this._handleAuthRequiredMessage(message);
         break;
       case MESSAGE_TYPE.AUTH_SUCCESS:
+        this._clearAuthRetryState();
         await this.setState("info.connection", true, true);
         this.log.info("Authentication successful. Connected to Wattpilot.");
         break;
       case MESSAGE_TYPE.AUTH_ERROR:
+        this._handleAuthErrorRetry();
         this.log.error(
           `Authentication failed. Please check your password. Server message: ${message.message || "n/a"}`,
         );
@@ -460,8 +479,9 @@ class FroniusWattpilot extends utils.Adapter {
       let token3 = this.__formatHex(ran).slice(0, 32);
       let hashedPassword;
       const useBcrypt = this._shouldUseBcryptAuthentication(message);
+      this.lastAuthMethod = useBcrypt ? "bcrypt" : "pbkdf2";
       this.log.info(
-        `Preparing authentication: method=${useBcrypt ? "bcrypt" : "pbkdf2"}, config.useBcrypt=${this.config.useBcrypt === true}, token3=${this._maskToken(token3)}`,
+        `Preparing authentication: method=${this.lastAuthMethod}, config.useBcrypt=${this.config.useBcrypt === true}, retry=${this.authRetryMethod || "none"}, token3=${this._maskToken(token3)}`,
       );
 
       if (useBcrypt) {
@@ -779,6 +799,7 @@ class FroniusWattpilot extends utils.Adapter {
         this.ws.close();
         this.ws = null;
       }
+      this._clearAuthRetryState();
       this.setState("info.connection", false, true);
       this.log.info("Cleanup complete. Adapter stopped.");
       callback();
@@ -928,6 +949,12 @@ class FroniusWattpilot extends utils.Adapter {
   // --- Helper functions for bcrypt authentication ---
 
   _shouldUseBcryptAuthentication(message) {
+    if (this.authRetryMethod === "bcrypt") {
+      return true;
+    }
+    if (this.authRetryMethod === "pbkdf2") {
+      return false;
+    }
     if (this.config.useBcrypt === true) {
       return true;
     }
@@ -945,6 +972,35 @@ class FroniusWattpilot extends utils.Adapter {
       return value;
     }
     return `${value.slice(0, 4)}…${value.slice(-4)}`;
+  }
+
+  _handleAuthErrorRetry() {
+    if (!this.lastAuthMethod) {
+      return;
+    }
+
+    if (this.authRetryMethod && this.authRetryMethod === this.lastAuthMethod) {
+      this.log.warn(
+        `Authentication retry with ${this.lastAuthMethod} also failed; stopping fallback loop.`,
+      );
+      this._clearAuthRetryState();
+      return;
+    }
+
+    this.authRetryMethod =
+      this.lastAuthMethod === "bcrypt" ? "pbkdf2" : "bcrypt";
+    this.log.warn(
+      `Authentication failed with ${this.lastAuthMethod}; retrying with ${this.authRetryMethod}.`,
+    );
+  }
+
+  _clearAuthRetryState() {
+    this.lastAuthMethod = null;
+    this.authRetryMethod = null;
+    if (this.authRetryTimer) {
+      clearTimeout(this.authRetryTimer);
+      this.authRetryTimer = null;
+    }
   }
 
   __randomBigInt(digits) {

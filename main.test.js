@@ -46,4 +46,18 @@ describe("FroniusWattpilot auth selection", () => {
     adapter.config.useBcrypt = true;
     expect(adapter._shouldUseBcryptAuthentication({ hash: "pbkdf2" })).to.equal(true);
   });
+
+  it("retries authentication with the alternate method after auth error", () => {
+    const adapter = createAdapter({ useBcrypt: false });
+
+    adapter.lastAuthMethod = "pbkdf2";
+    adapter._handleAuthErrorRetry();
+
+    expect(adapter.authRetryMethod).to.equal("bcrypt");
+    expect(adapter._shouldUseBcryptAuthentication({ hash: "pbkdf2" })).to.equal(true);
+
+    adapter.lastAuthMethod = "bcrypt";
+    adapter._handleAuthErrorRetry();
+    expect(adapter.authRetryMethod).to.equal(null);
+  });
 });
