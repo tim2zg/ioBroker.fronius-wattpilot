@@ -97,7 +97,7 @@ class FroniusWattpilot extends utils.Adapter {
     this.on("ready", this.onReady.bind(this));
     this.on("stateChange", this.onStateChange.bind(this));
     this.on("unload", this.onUnload.bind(this));
-  }
+  } 
 
   _getStaticStateDefinitions() {
     // Definitions for known API keys from the Wattpilot
@@ -357,6 +357,7 @@ class FroniusWattpilot extends utils.Adapter {
         `WebSocket connection closed. Code: ${code}, Reason: ${reason ? reason.toString() : "N/A"}`,
       );
       this.setState("info.connection", false, true);
+      this.sseToken = null;
       this.hashedPassword = null; // Invalidate hash on disconnect
       // Reconnect logic is handled by _checkUptime
     });
@@ -371,9 +372,14 @@ class FroniusWattpilot extends utils.Adapter {
         break;
       case MESSAGE_TYPE.HELLO:
         this.sseToken = message.serial;
-        this.log.info(`Received HELLO, SSE token: ${this.sseToken}`);
+        this.log.info(
+          `Received HELLO: serial=${this.sseToken}, protocol=${message.protocol ?? "n/a"}, secured=${message.secured ?? "n/a"}`,
+        );
         break;
       case MESSAGE_TYPE.AUTH_REQUIRED:
+        this.log.debug(
+          `Received AUTH_REQUIRED: token1=${this._maskToken(message.token1)}, token2=${this._maskToken(message.token2)}`,
+        );
         await this._handleAuthRequiredMessage(message);
         break;
       case MESSAGE_TYPE.AUTH_SUCCESS:
@@ -381,8 +387,12 @@ class FroniusWattpilot extends utils.Adapter {
         this.log.info("Authentication successful. Connected to Wattpilot.");
         break;
       case MESSAGE_TYPE.AUTH_ERROR:
-        this.log.error("Authentication failed. Please check your password.");
+        this.log.error(
+          `Authentication failed. Please check your password. Server message: ${message.message || "n/a"}`,
+        );
         await this.setState("info.connection", false, true);
+        this.sseToken = null;
+        this.hashedPassword = null;
         if (this.ws) {
           this.ws.close();
         } // Close connection on auth error
@@ -436,6 +446,12 @@ class FroniusWattpilot extends utils.Adapter {
       );
       return;
     }
+    if (!message.token1 || !message.token2) {
+      this.log.error(
+        "Authentication required, but token1/token2 are missing from the server message.",
+      );
+      return;
+    }
 
     try {
       // === Python: ran = random.randrange(10**80)
@@ -443,21 +459,12 @@ class FroniusWattpilot extends utils.Adapter {
       // === Python: "%064x" % ran
       let token3 = this.__formatHex(ran).slice(0, 32);
       let hashedPassword;
+      const useBcrypt = this._shouldUseBcryptAuthentication(message);
+      this.log.info(
+        `Preparing authentication: method=${useBcrypt ? "bcrypt" : "pbkdf2"}, config.useBcrypt=${this.config.useBcrypt === true}, token3=${this._maskToken(token3)}`,
+      );
 
-      if (message.hash === "pbkdf2") {
-        const iterations = 100000;
-        const keylen = 256;
-        const digest = "sha512";
-        const derivedKey = pbkdf2Sync(
-          this.config.pass,
-          this.sseToken,
-          iterations,
-          keylen,
-          digest,
-        );
-        this.hashedPassword = derivedKey.toString("base64").substring(0, 32);
-        hashedPassword = this.hashedPassword;
-      } else {
+      if (useBcrypt) {
         const passwordHashSha256 = createHash("sha256")
           .update(this.config.pass, "utf8")
           .digest("hex");
@@ -474,6 +481,19 @@ class FroniusWattpilot extends utils.Adapter {
 
         const pwhash = bcrypt.hashSync(passwordHashSha256, salt);
         this.hashedPassword = pwhash.slice(salt.length);
+        hashedPassword = this.hashedPassword;
+      } else {
+        const iterations = 100000;
+        const keylen = 256;
+        const digest = "sha512";
+        const derivedKey = pbkdf2Sync(
+          this.config.pass,
+          this.sseToken,
+          iterations,
+          keylen,
+          digest,
+        );
+        this.hashedPassword = derivedKey.toString("base64").substring(0, 32);
         hashedPassword = this.hashedPassword;
       }
 
@@ -493,7 +513,9 @@ class FroniusWattpilot extends utils.Adapter {
         hash: finalHash,
       };
 
-      this.log.debug("Sending authentication response (Python-compatible).");
+      this.log.debug(
+        `Sending authentication response: token3=${this._maskToken(token3)}, hash=${this._maskToken(finalHash)}`,
+      );
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
         this.ws.send(JSON.stringify(authResponse));
       }
@@ -904,6 +926,26 @@ class FroniusWattpilot extends utils.Adapter {
   }
 
   // --- Helper functions for bcrypt authentication ---
+
+  _shouldUseBcryptAuthentication(message) {
+    if (this.config.useBcrypt === true) {
+      return true;
+    }
+    if (this.config.useBcrypt === false) {
+      return message.hash === "bcrypt";
+    }
+    return message.hash === "bcrypt";
+  }
+
+  _maskToken(value) {
+    if (!value || typeof value !== "string") {
+      return "n/a";
+    }
+    if (value.length <= 8) {
+      return value;
+    }
+    return `${value.slice(0, 4)}…${value.slice(-4)}`;
+  }
 
   __randomBigInt(digits) {
     let result = "";
