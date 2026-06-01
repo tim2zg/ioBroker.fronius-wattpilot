@@ -14,6 +14,8 @@ const MESSAGE_TYPE = {
   AUTH_REQUIRED: "authRequired",
   AUTH_SUCCESS: "authSuccess",
   AUTH_ERROR: "authError",
+  FULL_STATUS: "fullStatus",
+  DELTA_STATUS: "deltaStatus",
   SET_VALUE: "setValue",
   SECURED_MSG: "securedMsg",
   CLEAR_SMIPS: "clearSmips",
@@ -341,7 +343,11 @@ class FroniusWattpilot extends utils.Adapter {
       try {
         const messageString = data.toString();
         const messageData = JSON.parse(messageString);
-        this._handleWebSocketMessage(messageData);
+        Promise.resolve(this._handleWebSocketMessage(messageData)).catch((err) => {
+          this.log.error(
+            `Unhandled error while processing message ${messageData.type || "unknown"}: ${err.message}`,
+          );
+        });
       } catch (e) {
         this.log.error(
           `Error parsing JSON message: ${e.message}. Data: ${data.toString()}`,
@@ -415,6 +421,12 @@ class FroniusWattpilot extends utils.Adapter {
         if (this.ws) {
           this.ws.close();
         } // Close connection on auth error
+        break;
+      case MESSAGE_TYPE.FULL_STATUS:
+      case MESSAGE_TYPE.DELTA_STATUS:
+        if (message.status && typeof message.status === "object") {
+          await this._parseStatusMessage(message.status);
+        }
         break;
       case MESSAGE_TYPE.CLEAR_SMIPS:
         break;
