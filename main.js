@@ -2,8 +2,8 @@
 
 const utils = require("@iobroker/adapter-core");
 const WebSocket = require("ws");
-const { createHash, createHmac, pbkdf2Sync } = require("node:crypto");
-const bcrypt = require("bcryptjs");
+const { createHmac } = require("node:crypto");
+const { computeAuthResponse } = require("./lib/wattpilot-auth");
 
 // --- Constants ---
 const ADAPTER_NAME = "fronius-wattpilot";
@@ -477,67 +477,34 @@ class FroniusWattpilot extends utils.Adapter {
       const ran = this.__randomBigInt(80);
       // === Python: "%064x" % ran
       let token3 = this.__formatHex(ran).slice(0, 32);
-      let hashedPassword;
       const useBcrypt = this._shouldUseBcryptAuthentication(message);
       this.lastAuthMethod = useBcrypt ? "bcrypt" : "pbkdf2";
       this.log.info(
         `Preparing authentication: method=${this.lastAuthMethod}, config.useBcrypt=${this.config.useBcrypt === true}, retry=${this.authRetryMethod || "none"}, token3=${this._maskToken(token3)}`,
       );
 
-      if (useBcrypt) {
-        const passwordHashSha256 = createHash("sha256")
-          .update(this.config.pass, "utf8")
-          .digest("hex");
+      const authResponse = computeAuthResponse({
+        password: this.config.pass,
+        serial: this.sseToken,
+        token1: message.token1,
+        token2: message.token2,
+        method: this.lastAuthMethod,
+        token3,
+      });
+      this.hashedPassword = authResponse.hashedPassword;
+      token3 = authResponse.token3;
 
-        const serial = String(this.sseToken || "");
-        const serialB64 = this.__bcryptjs_encodeBase64(serial, 16);
-
-        const iterations = 8;
-        let salt = "$2a$";
-        if (iterations < 10) {
-          salt += "0";
-        }
-        salt += `${iterations}$${serialB64}`;
-
-        const pwhash = bcrypt.hashSync(passwordHashSha256, salt);
-        this.hashedPassword = pwhash.slice(salt.length);
-        hashedPassword = this.hashedPassword;
-      } else {
-        const iterations = 100000;
-        const keylen = 256;
-        const digest = "sha512";
-        const derivedKey = pbkdf2Sync(
-          this.config.pass,
-          this.sseToken,
-          iterations,
-          keylen,
-          digest,
-        );
-        this.hashedPassword = derivedKey.toString("base64").substring(0, 32);
-        hashedPassword = this.hashedPassword;
-      }
-
-      // === Python: hash1 = sha256(token1 + hashedPassword)
-      const hash1 = createHash("sha256")
-        .update(message.token1 + hashedPassword)
-        .digest("hex");
-
-      // === Python: hash = sha256(token3 + token2 + hash1)
-      const finalHash = createHash("sha256")
-        .update(token3 + message.token2 + hash1)
-        .digest("hex");
-
-      const authResponse = {
+      const response = {
         type: "auth",
         token3,
-        hash: finalHash,
+        hash: authResponse.hash,
       };
 
       this.log.debug(
-        `Sending authentication response: token3=${this._maskToken(token3)}, hash=${this._maskToken(finalHash)}`,
+        `Sending authentication response: token3=${this._maskToken(token3)}, hash=${this._maskToken(authResponse.hash)}`,
       );
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-        this.ws.send(JSON.stringify(authResponse));
+        this.ws.send(JSON.stringify(response));
       }
     } catch (err) {
       this.log.error(`Error during authentication process: ${err.message}`);

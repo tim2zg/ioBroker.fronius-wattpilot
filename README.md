@@ -120,6 +120,16 @@ The adapter connects to the Wattpilot's WebSocket interface and converts incomin
 - **Missing data points**: Try enabling "All Values" mode
 - **Cloud connection issues**: Verify the `cae` setting
 
+### Local auth probe
+
+If login still fails, you can run a local probe that connects to your Wattpilot, prints both auth candidates, and can retry with PBKDF2 or bcrypt:
+
+```bash
+npm run auth:probe -- --url ws://192.168.1.198/ws --password YOUR_PASSWORD
+```
+
+Use `--method print` to only print the calculated candidates, or `--method pbkdf2` / `--method bcrypt` to force one method.
+
 **⚠️ Disclaimer:** This adapter uses unofficial APIs. Use at your own risk and be careful when modifying settings that could affect your device's operation.
 
 ## Developers

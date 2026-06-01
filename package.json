@@ -70,6 +70,7 @@
     "test:unit": "npx mocha test/unit --exit",
     "test:integration": "npx mocha test/integration --exit",
     "test": "npm run test:js && npm run test:package",
+    "auth:probe": "node scripts/auth-probe.js",
     "check": "tsc --noEmit -p tsconfig.check.json",
     "lint": "eslint -c eslint.config.mjs .",
     "translate": "translate-adapter",
