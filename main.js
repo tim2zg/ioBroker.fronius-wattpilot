@@ -14,6 +14,8 @@ const MESSAGE_TYPE = {
   AUTH_REQUIRED: "authRequired",
   AUTH_SUCCESS: "authSuccess",
   AUTH_ERROR: "authError",
+  FULL_STATUS: "fullStatus",
+  DELTA_STATUS: "deltaStatus",
   SET_VALUE: "setValue",
   SECURED_MSG: "securedMsg",
   CLEAR_SMIPS: "clearSmips",
@@ -29,6 +31,147 @@ const DEFAULT_PASSWORD_PLACEHOLDER = "Password";
 
 const UPTIME_CHECK_INTERVAL_MS = 1000 * 60 * 2.5; // 2.5 minutes
 const WEBSOCKET_HANDSHAKE_TIMEOUT_MS = 5000;
+
+function deriveHashedPassword(password, serial, method) {
+  if (!password) {
+    throw new Error("Password is required.");
+  }
+  if (!serial) {
+    throw new Error("Serial is required.");
+  }
+
+  if (method === "bcrypt") {
+    const passwordHashSha256 = createHash("sha256")
+      .update(password, "utf8")
+      .digest("hex");
+
+    const serialB64 = encodeSerialBase64(String(serial), 16);
+    const salt = `$2a$08$${serialB64}`;
+    const pwhash = bcrypt.hashSync(passwordHashSha256, salt);
+    return pwhash.slice(salt.length);
+  }
+
+  if (method === "pbkdf2") {
+    return pbkdf2Sync(password, String(serial), 100000, 256, "sha512")
+      .toString("base64")
+      .substring(0, 32);
+  }
+
+  throw new Error(`Unsupported auth method: ${method}`);
+}
+
+function computeAuthResponse({
+  password,
+  serial,
+  token1,
+  token2,
+  method,
+  token3,
+}) {
+  if (!token1 || !token2) {
+    throw new Error("token1 and token2 are required.");
+  }
+
+  const derivedPassword = deriveHashedPassword(password, serial, method);
+  const finalToken3 = token3 || generateToken3();
+
+  const hash1 = createHash("sha256")
+    .update(token1 + derivedPassword)
+    .digest("hex");
+  const hash = createHash("sha256")
+    .update(finalToken3 + token2 + hash1)
+    .digest("hex");
+
+  return {
+    token3: finalToken3,
+    hash,
+    hashedPassword: derivedPassword,
+  };
+}
+
+function computeAuthCandidates({ password, serial, token1, token2, token3 }) {
+  return {
+    pbkdf2: computeAuthResponse({
+      password,
+      serial,
+      token1,
+      token2,
+      method: "pbkdf2",
+      token3,
+    }),
+    bcrypt: computeAuthResponse({
+      password,
+      serial,
+      token1,
+      token2,
+      method: "bcrypt",
+      token3,
+    }),
+  };
+}
+
+function generateToken3() {
+  let result = "";
+  for (let i = 0; i < 80; i++) {
+    const digit =
+      i === 0
+        ? Math.floor(Math.random() * 9) + 1
+        : Math.floor(Math.random() * 10);
+    result += digit.toString();
+  }
+
+  return BigInt(result).toString(16).padStart(64, "0").slice(0, 32);
+}
+
+function encodeSerialBase64(serial, length) {
+  if (!/^\d+$/.test(serial)) {
+    throw new Error(`Check serial string - should be digits only: ${serial}`);
+  }
+
+  const vals = Array.from(serial).map((ch) => ch.charCodeAt(0) - 48);
+  const b = Buffer.concat([
+    Buffer.alloc(length - vals.length, 0),
+    Buffer.from(vals),
+  ]);
+  return bcryptBase64Encode(b, length);
+}
+
+function bcryptBase64Encode(buffer, length) {
+  const BASE64_CODE =
+    "./ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let off = 0;
+  const rs = [];
+
+  if (length <= 0 || length > buffer.length) {
+    throw new Error(`Illegal len: ${length}`);
+  }
+
+  while (off < length) {
+    let c1 = buffer[off++] & 0xff;
+    rs.push(BASE64_CODE[(c1 >> 2) & 0x3f]);
+    c1 = (c1 & 0x03) << 4;
+    if (off >= length) {
+      rs.push(BASE64_CODE[c1 & 0x3f]);
+      break;
+    }
+
+    let c2 = buffer[off++] & 0xff;
+    c1 |= (c2 >> 4) & 0x0f;
+    rs.push(BASE64_CODE[c1 & 0x3f]);
+    c1 = (c2 & 0x0f) << 2;
+    if (off >= length) {
+      rs.push(BASE64_CODE[c1 & 0x3f]);
+      break;
+    }
+
+    c2 = buffer[off++] & 0xff;
+    c1 |= (c2 >> 6) & 0x03;
+    rs.push(BASE64_CODE[c1 & 0x3f]);
+    rs.push(BASE64_CODE[c2 & 0x3f]);
+  }
+
+  return rs.join("");
+}
 
 // Mappings for state values
 const ACCESS_STATE_MAP_API_TO_VAL = { 0: "Open", 1: "Wait" };
@@ -90,6 +233,9 @@ class FroniusWattpilot extends utils.Adapter {
     this.connectionUptimeMonitor = null;
     this.createdStatesRegistry = new Set(); // Tracks API keys for which states have been created
     this.customParamsToParse = []; // Parsed from config.addParam
+    this.authRetryMethod = null;
+    this.lastAuthMethod = null;
+    this.authRetryTimer = null;
 
     this.STATE_DEFINITIONS = this._getStaticStateDefinitions();
     this.STATE_CHANGE_HANDLERS = this._getStaticStateChangeHandlers();
@@ -338,7 +484,13 @@ class FroniusWattpilot extends utils.Adapter {
       try {
         const messageString = data.toString();
         const messageData = JSON.parse(messageString);
-        this._handleWebSocketMessage(messageData);
+        Promise.resolve(this._handleWebSocketMessage(messageData)).catch(
+          (err) => {
+            this.log.error(
+              `Unhandled error while processing message ${messageData.type || "unknown"}: ${err.message}`,
+            );
+          },
+        );
       } catch (e) {
         this.log.error(
           `Error parsing JSON message: ${e.message}. Data: ${data.toString()}`,
@@ -357,7 +509,22 @@ class FroniusWattpilot extends utils.Adapter {
         `WebSocket connection closed. Code: ${code}, Reason: ${reason ? reason.toString() : "N/A"}`,
       );
       this.setState("info.connection", false, true);
+      this.sseToken = null;
       this.hashedPassword = null; // Invalidate hash on disconnect
+      if (this.authRetryMethod) {
+        if (this.authRetryTimer) {
+          clearTimeout(this.authRetryTimer);
+        }
+        this.authRetryTimer = setTimeout(() => {
+          this.authRetryTimer = null;
+          if (this.authRetryMethod) {
+            this.log.warn(
+              `Retrying authentication with ${this.authRetryMethod}.`,
+            );
+            this._createWsConnection();
+          }
+        }, 1000);
+      }
       // Reconnect logic is handled by _checkUptime
     });
   }
@@ -371,21 +538,38 @@ class FroniusWattpilot extends utils.Adapter {
         break;
       case MESSAGE_TYPE.HELLO:
         this.sseToken = message.serial;
-        this.log.info(`Received HELLO, SSE token: ${this.sseToken}`);
+        this.log.info(
+          `Received HELLO: serial=${this.sseToken}, protocol=${message.protocol ?? "n/a"}, secured=${message.secured ?? "n/a"}`,
+        );
         break;
       case MESSAGE_TYPE.AUTH_REQUIRED:
+        this.log.debug(
+          `Received AUTH_REQUIRED: token1=${this._maskToken(message.token1)}, token2=${this._maskToken(message.token2)}`,
+        );
         await this._handleAuthRequiredMessage(message);
         break;
       case MESSAGE_TYPE.AUTH_SUCCESS:
+        this._clearAuthRetryState();
         await this.setState("info.connection", true, true);
         this.log.info("Authentication successful. Connected to Wattpilot.");
         break;
       case MESSAGE_TYPE.AUTH_ERROR:
-        this.log.error("Authentication failed. Please check your password.");
+        this._handleAuthErrorRetry();
+        this.log.error(
+          `Authentication failed. Please check your password. Server message: ${message.message || "n/a"}`,
+        );
         await this.setState("info.connection", false, true);
+        this.sseToken = null;
+        this.hashedPassword = null;
         if (this.ws) {
           this.ws.close();
         } // Close connection on auth error
+        break;
+      case MESSAGE_TYPE.FULL_STATUS:
+      case MESSAGE_TYPE.DELTA_STATUS:
+        if (message.status && typeof message.status === "object") {
+          await this._parseStatusMessage(message.status);
+        }
         break;
       case MESSAGE_TYPE.CLEAR_SMIPS:
         break;
@@ -436,66 +620,44 @@ class FroniusWattpilot extends utils.Adapter {
       );
       return;
     }
+    if (!message.token1 || !message.token2) {
+      this.log.error(
+        "Authentication required, but token1/token2 are missing from the server message.",
+      );
+      return;
+    }
 
     try {
       // === Python: ran = random.randrange(10**80)
-      const ran = this.__randomBigInt(80);
-      // === Python: "%064x" % ran
-      let token3 = this.__formatHex(ran).slice(0, 32);
-      let hashedPassword;
+      let token3 = generateToken3();
+      const useBcrypt = this._shouldUseBcryptAuthentication(message);
+      this.lastAuthMethod = useBcrypt ? "bcrypt" : "pbkdf2";
+      this.log.info(
+        `Preparing authentication: method=${this.lastAuthMethod}, config.useBcrypt=${this.config.useBcrypt === true}, retry=${this.authRetryMethod || "none"}, token3=${this._maskToken(token3)}`,
+      );
 
-      if (message.hash === "pbkdf2") {
-        const iterations = 100000;
-        const keylen = 256;
-        const digest = "sha512";
-        const derivedKey = pbkdf2Sync(
-          this.config.pass,
-          this.sseToken,
-          iterations,
-          keylen,
-          digest,
-        );
-        this.hashedPassword = derivedKey.toString("base64").substring(0, 32);
-        hashedPassword = this.hashedPassword;
-      } else {
-        const passwordHashSha256 = createHash("sha256")
-          .update(this.config.pass, "utf8")
-          .digest("hex");
+      const authResponse = computeAuthResponse({
+        password: this.config.pass,
+        serial: this.sseToken,
+        token1: message.token1,
+        token2: message.token2,
+        method: this.lastAuthMethod,
+        token3,
+      });
+      this.hashedPassword = authResponse.hashedPassword;
+      token3 = authResponse.token3;
 
-        const serial = String(this.sseToken || "");
-        const serialB64 = this.__bcryptjs_encodeBase64(serial, 16);
-
-        const iterations = 8;
-        let salt = "$2a$";
-        if (iterations < 10) {
-          salt += "0";
-        }
-        salt += `${iterations}$${serialB64}`;
-
-        const pwhash = bcrypt.hashSync(passwordHashSha256, salt);
-        this.hashedPassword = pwhash.slice(salt.length);
-        hashedPassword = this.hashedPassword;
-      }
-
-      // === Python: hash1 = sha256(token1 + hashedPassword)
-      const hash1 = createHash("sha256")
-        .update(message.token1 + hashedPassword)
-        .digest("hex");
-
-      // === Python: hash = sha256(token3 + token2 + hash1)
-      const finalHash = createHash("sha256")
-        .update(token3 + message.token2 + hash1)
-        .digest("hex");
-
-      const authResponse = {
+      const response = {
         type: "auth",
         token3,
-        hash: finalHash,
+        hash: authResponse.hash,
       };
 
-      this.log.debug("Sending authentication response (Python-compatible).");
+      this.log.debug(
+        `Sending authentication response: token3=${this._maskToken(token3)}, hash=${this._maskToken(authResponse.hash)}`,
+      );
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-        this.ws.send(JSON.stringify(authResponse));
+        this.ws.send(JSON.stringify(response));
       }
     } catch (err) {
       this.log.error(`Error during authentication process: ${err.message}`);
@@ -757,6 +919,7 @@ class FroniusWattpilot extends utils.Adapter {
         this.ws.close();
         this.ws = null;
       }
+      this._clearAuthRetryState();
       this.setState("info.connection", false, true);
       this.log.info("Cleanup complete. Adapter stopped.");
       callback();
@@ -905,74 +1068,59 @@ class FroniusWattpilot extends utils.Adapter {
 
   // --- Helper functions for bcrypt authentication ---
 
-  __randomBigInt(digits) {
-    let result = "";
-    const digitsNum = typeof digits === "bigint" ? Number(digits) : digits;
-    for (let i = 0; i < digitsNum; i++) {
-      let digit =
-        i === 0
-          ? Math.floor(Math.random() * 9) + 1
-          : Math.floor(Math.random() * 10);
-      result += digit.toString();
+  _shouldUseBcryptAuthentication(message) {
+    if (this.authRetryMethod === "bcrypt") {
+      return true;
     }
-    return BigInt(result);
+    if (this.authRetryMethod === "pbkdf2") {
+      return false;
+    }
+    if (this.config.useBcrypt === true) {
+      return true;
+    }
+    if (this.config.useBcrypt === false) {
+      return message.hash === "bcrypt";
+    }
+    return message.hash === "bcrypt";
   }
 
-  __formatHex(bigint) {
-    let hex = bigint.toString(16);
-    return hex.padStart(64, "0");
+  _maskToken(value) {
+    if (!value || typeof value !== "string") {
+      return "n/a";
+    }
+    if (value.length <= 8) {
+      return value;
+    }
+    return `${value.slice(0, 4)}…${value.slice(-4)}`;
   }
 
-  __bcryptjs_encodeBase64(s, length) {
-    if (/^\d+$/.test(s)) {
-      const vals = Array.from(s).map((ch) => ch.charCodeAt(0) - 48);
-      const b = Buffer.concat([
-        Buffer.alloc(length - vals.length, 0),
-        Buffer.from(vals),
-      ]);
-      return this.__bcryptjs_base64_encode(b, length);
+  _handleAuthErrorRetry() {
+    if (!this.lastAuthMethod) {
+      return;
     }
-    this.log.error(
-      `__bcryptjs_encodeBase64: check serial string - should be digits only: ${s}`,
+
+    if (this.authRetryMethod && this.authRetryMethod === this.lastAuthMethod) {
+      this.log.warn(
+        `Authentication retry with ${this.lastAuthMethod} also failed; stopping fallback loop.`,
+      );
+      this._clearAuthRetryState();
+      return;
+    }
+
+    this.authRetryMethod =
+      this.lastAuthMethod === "bcrypt" ? "pbkdf2" : "bcrypt";
+    this.log.warn(
+      `Authentication failed with ${this.lastAuthMethod}; retrying with ${this.authRetryMethod}.`,
     );
-    throw new Error(`Check serial string - should be digits only: ${s}`);
   }
 
-  __bcryptjs_base64_encode(b, length) {
-    const BASE64_CODE =
-      "./ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    let off = 0;
-    let rs = [];
-
-    if (length <= 0 || length > b.length) {
-      throw new Error(`Illegal len: ${length}`);
+  _clearAuthRetryState() {
+    this.lastAuthMethod = null;
+    this.authRetryMethod = null;
+    if (this.authRetryTimer) {
+      clearTimeout(this.authRetryTimer);
+      this.authRetryTimer = null;
     }
-
-    while (off < length) {
-      let c1 = b[off++] & 0xff;
-      rs.push(BASE64_CODE[(c1 >> 2) & 0x3f]);
-      c1 = (c1 & 0x03) << 4;
-      if (off >= length) {
-        rs.push(BASE64_CODE[c1 & 0x3f]);
-        break;
-      }
-
-      let c2 = b[off++] & 0xff;
-      c1 |= (c2 >> 4) & 0x0f;
-      rs.push(BASE64_CODE[c1 & 0x3f]);
-      c1 = (c2 & 0x0f) << 2;
-      if (off >= length) {
-        rs.push(BASE64_CODE[c1 & 0x3f]);
-        break;
-      }
-
-      c2 = b[off++] & 0xff;
-      c1 |= (c2 >> 6) & 0x03;
-      rs.push(BASE64_CODE[c1 & 0x3f]);
-      rs.push(BASE64_CODE[c2 & 0x3f]);
-    }
-
-    return rs.join("");
   }
 }
 
@@ -981,3 +1129,8 @@ if (require.main !== module) {
 } else {
   (() => new FroniusWattpilot())();
 }
+
+module.exports.computeAuthCandidates = computeAuthCandidates;
+module.exports.computeAuthResponse = computeAuthResponse;
+module.exports.deriveHashedPassword = deriveHashedPassword;
+module.exports.generateToken3 = generateToken3;

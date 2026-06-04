@@ -120,7 +120,7 @@ The adapter connects to the Wattpilot's WebSocket interface and converts incomin
 - **Missing data points**: Try enabling "All Values" mode
 - **Cloud connection issues**: Verify the `cae` setting
 
-**⚠️ Disclaimer:** This adapter uses unofficial APIs. Use at your own risk and be careful when modifying settings that could affect your device's operation.
+- **⚠️ Disclaimer:** This adapter uses unofficial APIs. Use at your own risk and be careful when modifying settings that could affect your device's operation.
 
 ## Developers
 
@@ -135,6 +135,8 @@ The adapter connects to the Wattpilot's WebSocket interface and converts incomin
     ### **WORK IN PROGRESS**
 -->
 ### **WORK IN PROGRESS**
+
+- (Miro1310) Fixed login to wallbox, wrong password
 - (copilot) Adapter requires node.js >= 22 now
 
 ### 4.8.0 (2025-11-29)

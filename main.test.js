@@ -1,30 +1,63 @@
 "use strict";
 
-/**
- * This is a dummy TypeScript test file using chai and mocha
- *
- * It's automatically excluded from npm and its build output is excluded from both git and npm.
- * It is advised to test all your modules with accompanying *.test.js-files
- */
-
-// tslint:disable:no-unused-expression
-
 const { expect } = require("chai");
-// import { functionToTest } from "./moduleToTest";
+const proxyquire = require("proxyquire").noCallThru();
 
-describe("module to test => function to test", () => {
-	// initializing logic
-	const expected = 5;
+describe("FroniusWattpilot auth selection", () => {
+  function createAdapter(config = {}) {
+    class AdapterMock {
+      constructor(options) {
+        this.options = options;
+        this.config = {};
+        this.log = {
+          debug() {},
+          info() {},
+          warn() {}, 
+          error() {},
+        };
+      }
 
-	it(`should return ${expected}`, () => {
-		const result = 5;
-		// assign result a value from functionToTest
-		expect(result).to.equal(expected);
-		// or using the should() syntax
-		result.should.equal(expected);
-	});
-	// ... more tests => it
+      on() {}
 
+      setState() {}
+
+      subscribeStates() {}
+    }
+
+    class WebSocketMock {}
+
+    const create = proxyquire("./main.js", {
+      "@iobroker/adapter-core": { Adapter: AdapterMock },
+      ws: WebSocketMock,
+    });
+
+    const adapter = create({});
+    adapter.config = config;
+    return adapter;
+  }
+
+  it("uses PBKDF2 by default and only switches to bcrypt when needed", () => {
+    const adapter = createAdapter({ useBcrypt: false });
+
+    expect(adapter._shouldUseBcryptAuthentication({})).to.equal(false);
+    expect(adapter._shouldUseBcryptAuthentication({ hash: "pbkdf2" })).to.equal(false);
+    expect(adapter._shouldUseBcryptAuthentication({ hash: "bcrypt" })).to.equal(true);
+
+    adapter.config.useBcrypt = true;
+    expect(adapter._shouldUseBcryptAuthentication({ hash: "pbkdf2" })).to.equal(true);
+  });
+
+  it("retries authentication with the alternate method after auth error", () => {
+    const adapter = createAdapter({ useBcrypt: false });
+
+    adapter.lastAuthMethod = "pbkdf2";
+    adapter._handleAuthErrorRetry();
+
+    expect(adapter.authRetryMethod).to.equal("bcrypt");
+    expect(adapter._shouldUseBcryptAuthentication({ hash: "pbkdf2" })).to.equal(true);
+
+    adapter.lastAuthMethod = "bcrypt";
+    adapter._handleAuthErrorRetry();
+    expect(adapter.authRetryMethod).to.equal(null);
+  });
 });
-
-// ... more test suites => describe
