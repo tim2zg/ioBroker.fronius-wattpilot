@@ -12,6 +12,5 @@
     "help_cloud": "Not recommended in a local environment",
     "label_add_param": "Give additional Parameters as semicolon (;) seperated list",
     "help_add_param": "only needed if \"Only read most...\" is checked",
-    "fronius-wattpilot adapter settings": "Adapter settings for fronius-wattpilot",
-    "Only read most common data-points": "Only read most common data-points"
+    "fronius-wattpilot adapter settings": "Adapter settings for fronius-wattpilot"
 }
