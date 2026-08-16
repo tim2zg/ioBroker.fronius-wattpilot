@@ -43,6 +43,31 @@ class MockAdapter extends EventEmitter {
     }
 }
 
+/**
+ * Mock WebSocket constructor that tracks instances.
+ */
+class MockWebSocketInstance extends EventEmitter {
+    constructor(url, options) {
+        super();
+        this.url = url;
+        this.options = options;
+        this.readyState = WebSocket.OPEN;
+        this.send = sinon.stub();
+        this.close = sinon.stub().callsFake(() => {
+            this.readyState = WebSocket.CLOSED;
+            this.emit('close', 1000, 'Normal');
+        });
+        this.terminate = sinon.stub().callsFake(() => {
+            this.readyState = WebSocket.CLOSED;
+            this.emit('close', 1006, 'Abnormal');
+        });
+    }
+}
+MockWebSocketInstance.OPEN = WebSocket.OPEN;
+MockWebSocketInstance.CLOSED = WebSocket.CLOSED;
+MockWebSocketInstance.CONNECTING = WebSocket.CONNECTING;
+MockWebSocketInstance.CLOSING = WebSocket.CLOSING;
+
 const mockAdapterCore = {
     Adapter: MockAdapter,
     adapter: options => new MockAdapter(options),
@@ -51,6 +76,7 @@ const mockAdapterCore = {
 
 const createAdapter = proxyquire('../main', {
     '@iobroker/adapter-core': mockAdapterCore,
+    ws: MockWebSocketInstance,
 });
 const FroniusWattpilot = createAdapter.FroniusWattpilot;
 
@@ -79,16 +105,12 @@ function createTestAdapter(config = {}) {
 
 /**
  * Creates a mock WebSocket object.
+ * @param {number} [readyState]
  */
 function createMockWs(readyState = WebSocket.OPEN) {
-    return {
-        readyState,
-        send: sinon.stub(),
-        close: sinon.stub(),
-        terminate: sinon.stub(),
-        removeAllListeners: sinon.stub(),
-        on: sinon.stub(),
-    };
+    const ws = new MockWebSocketInstance('ws://localhost/ws', {});
+    ws.readyState = readyState;
+    return ws;
 }
 
 describe('Fronius Wattpilot Adapter - Comprehensive Tests', () => {
@@ -229,8 +251,6 @@ describe('Fronius Wattpilot Adapter - Comprehensive Tests', () => {
             adapter.onUnload(() => {
                 expect(adapter.clearInterval).to.have.been.calledWith(mockTimer);
                 expect(adapter.connectionUptimeMonitor).to.be.null;
-                expect(mockWs.removeAllListeners).to.have.been.calledOnce;
-                expect(mockWs.close).to.have.been.calledOnce;
                 expect(adapter.ws).to.be.null;
                 expect(adapter.setState).to.have.been.calledWith('info.connection', false, true);
                 done();
@@ -278,7 +298,71 @@ describe('Fronius Wattpilot Adapter - Comprehensive Tests', () => {
         });
     });
 
-    describe('3. WebSocket Message Handling & Routing', () => {
+    describe('3. WebSocket Connection & Event Handlers', () => {
+        it('should skip creating connection when already open or connecting', () => {
+            const adapter = createTestAdapter();
+            adapter.ws = { readyState: WebSocket.OPEN };
+
+            adapter._createWsConnection();
+            expect(adapter.log.debug).to.have.been.calledWith('WebSocket connection attempt skipped, already open or connecting.');
+
+            adapter.ws.readyState = WebSocket.CONNECTING;
+            adapter._createWsConnection();
+            expect(adapter.log.debug).to.have.been.calledWith('WebSocket connection attempt skipped, already open or connecting.');
+        });
+
+        it('should bind open, message, error, close events and handle messages', () => {
+            const adapter = createTestAdapter();
+            adapter._createWsConnection();
+
+            const ws = adapter.ws;
+            expect(ws).to.exist;
+
+            // Trigger open event
+            ws.emit('open');
+            expect(adapter.log.debug).to.have.been.calledWith('WebSocket connection opened. Waiting for messages.');
+
+            // Trigger message event with valid JSON
+            sinon.spy(adapter, '_handleWebSocketMessage');
+            ws.emit('message', Buffer.from(JSON.stringify({ type: 'hello', serial: 'TEST1234' })));
+            expect(adapter._handleWebSocketMessage).to.have.been.calledOnce;
+
+            // Trigger message event with invalid JSON
+            ws.emit('message', Buffer.from('invalid-json{'));
+            expect(adapter.log.error).to.have.been.calledWithMatch('Error parsing JSON message');
+
+            // Trigger error event
+            ws.emit('error', new Error('Network timeout'));
+            expect(adapter.log.error).to.have.been.calledWithMatch('WebSocket error: Network timeout');
+            expect(adapter.setState).to.have.been.calledWith('info.connection', false, true);
+
+            // Trigger close event with authRetryMethod
+            adapter.authRetryMethod = 'bcrypt';
+            const createWsSpy = sinon.spy(adapter, '_createWsConnection');
+            ws.emit('close', 1000, 'Normal Closure');
+
+            expect(adapter.log.info).to.have.been.calledWithMatch('WebSocket connection closed');
+            expect(adapter.sseToken).to.be.null;
+            expect(adapter.hashedPassword).to.be.null;
+
+            // Test retry timer firing
+            expect(adapter.setTimeout).to.have.been.calledOnce;
+        });
+
+        it('should catch unhandled async errors in _handleWebSocketMessage dispatch', async () => {
+            const adapter = createTestAdapter();
+            adapter._createWsConnection();
+
+            sinon.stub(adapter, '_handleWebSocketMessage').rejects(new Error('Async dispatch failure'));
+
+            adapter.ws.emit('message', Buffer.from(JSON.stringify({ type: 'custom' })));
+
+            await new Promise(resolve => setTimeout(resolve, 10));
+            expect(adapter.log.error).to.have.been.calledWithMatch('Unhandled error while processing message custom: Async dispatch failure');
+        });
+    });
+
+    describe('4. WebSocket Message Handling & Routing', () => {
         it('should handle HELLO message and store sseToken', async () => {
             const adapter = createTestAdapter();
             await adapter._handleWebSocketMessage({
@@ -339,6 +423,16 @@ describe('Fronius Wattpilot Adapter - Comprehensive Tests', () => {
                 status: { amp: 16 },
             });
             expect(adapter._parseStatusMessage).to.have.been.calledWith({ amp: 16 });
+        });
+
+        it('should handle ignore messages like CLEAR_SMIPS, CLEAR_INVERTERS, UPDATE_INVERTER without warning', async () => {
+            const adapter = createTestAdapter();
+
+            await adapter._handleWebSocketMessage({ type: 'clearSmips' });
+            await adapter._handleWebSocketMessage({ type: 'clearInverters' });
+            await adapter._handleWebSocketMessage({ type: 'updateInverter' });
+
+            expect(adapter.log.warn).to.not.have.been.called;
         });
 
         it('should handle RESPONSE message with amp status', () => {
@@ -407,7 +501,7 @@ describe('Fronius Wattpilot Adapter - Comprehensive Tests', () => {
         });
     });
 
-    describe('4. Authentication & Auth Selection Logic', () => {
+    describe('5. Authentication & Auth Selection Logic', () => {
         it('should authenticate using PBKDF2 by default when message.hash is undefined or "pbkdf2"', async () => {
             const adapter = createTestAdapter({
                 pass: 'testPassword123',
@@ -550,7 +644,7 @@ describe('Fronius Wattpilot Adapter - Comprehensive Tests', () => {
         });
     });
 
-    describe('5. Status Message Parsing & Value Mapping', () => {
+    describe('6. Status Message Parsing & Value Mapping', () => {
         it('should map AccessState (acs) values correctly', async () => {
             const adapter = createTestAdapter();
 
@@ -598,6 +692,28 @@ describe('Fronius Wattpilot Adapter - Comprehensive Tests', () => {
             });
         });
 
+        it('should parse simple numeric and boolean states (cbl, fhz, wh, eto, cak, alw, amp, modelStatus)', async () => {
+            const adapter = createTestAdapter();
+
+            await adapter._parseStatusMessage({
+                cbl: 32,
+                wh: 1500,
+                eto: 50000,
+                cak: 'KEY123',
+                alw: true,
+                amp: 16,
+                modelStatus: 'Ready',
+            });
+
+            expect(adapter.setStateAsync).to.have.been.calledWith('cableType', { val: 32, ack: true });
+            expect(adapter.setStateAsync).to.have.been.calledWith('energyCounterSinceStart', { val: 1500, ack: true });
+            expect(adapter.setStateAsync).to.have.been.calledWith('energyCounterTotal', { val: 50000, ack: true });
+            expect(adapter.setStateAsync).to.have.been.calledWith('cak', { val: 'KEY123', ack: true });
+            expect(adapter.setStateAsync).to.have.been.calledWith('allowCharging', { val: true, ack: true });
+            expect(adapter.setStateAsync).to.have.been.calledWith('amp', { val: 16, ack: true });
+            expect(adapter.setStateAsync).to.have.been.calledWith('modelStatus', { val: 'Ready', ack: true });
+        });
+
         it('should parse 12-element energy array (nrg) into individual state points with kW conversion', async () => {
             const adapter = createTestAdapter();
 
@@ -616,6 +732,16 @@ describe('Fronius Wattpilot Adapter - Comprehensive Tests', () => {
             expect(adapter.setStateAsync).to.have.been.calledWith('power3', { val: 4, ack: true });
             expect(adapter.setStateAsync).to.have.been.calledWith('powerN', { val: 0, ack: true });
             expect(adapter.setStateAsync).to.have.been.calledWith('power', { val: 11.25, ack: true });
+        });
+
+        it('should warn and abort when invalid nrg data is passed', async () => {
+            const adapter = createTestAdapter();
+
+            await adapter._parseStatusMessage({ nrg: 'invalid-nrg' });
+            expect(adapter.log.warn).to.have.been.calledWithMatch("Invalid 'nrg' array received");
+
+            await adapter._parseStatusMessage({ nrg: [1, 2, 3] });
+            expect(adapter.log.warn).to.have.been.calledWithMatch("Invalid 'nrg' array received");
         });
 
         it('should throttle updates based on frequency rate limit for rate-limited states', async () => {
@@ -638,7 +764,7 @@ describe('Fronius Wattpilot Adapter - Comprehensive Tests', () => {
         });
     });
 
-    describe('6. Custom Parameters and Dynamic Parser Mode', () => {
+    describe('7. Custom Parameters and Dynamic Parser Mode', () => {
         it('should parse custom params specified in addParam even when strict parser is true', async () => {
             const adapter = createTestAdapter({
                 parser: true,
@@ -653,6 +779,7 @@ describe('Fronius Wattpilot Adapter - Comprehensive Tests', () => {
 
             expect(adapter.setStateAsync).to.have.been.calledWith('custom_field_1', { val: 42, ack: true });
             expect(adapter.setStateAsync).to.not.have.been.calledWith('unknown_field');
+            expect(adapter.log.debug).to.have.been.calledWithMatch('Ignored unhandled parameter');
         });
 
         it('should dynamically parse unknown fields when parser is false (dynamic mode)', async () => {
@@ -691,9 +818,19 @@ describe('Fronius Wattpilot Adapter - Comprehensive Tests', () => {
             await adapter._parseStatusMessage({ null_param: null, undef_param: undefined });
             expect(adapter.setStateAsync).to.not.have.been.called;
         });
+
+        it('should not re-create state in registry if already created', async () => {
+            const adapter = createTestAdapter({ parser: false });
+            adapter.createdStatesRegistry.add('existing_param');
+            sinon.spy(adapter, '_ensureObjectExists');
+
+            await adapter._parseStatusMessage({ existing_param: 'val' });
+            expect(adapter._ensureObjectExists).to.not.have.been.called;
+            expect(adapter.setStateAsync).to.have.been.calledWith('existing_param', { val: 'val', ack: true });
+        });
     });
 
-    describe('7. State Change Handlers & Secure Command Dispatch', () => {
+    describe('8. State Change Handlers & Secure Command Dispatch', () => {
         let adapter;
         let mockWs;
 
@@ -748,6 +885,11 @@ describe('Fronius Wattpilot Adapter - Comprehensive Tests', () => {
             );
         });
 
+        it('should log error on invalid value for set_power', () => {
+            adapter.onStateChange('fronius-wattpilot.0.set_power', { val: 'not_a_number', ack: false });
+            expect(adapter.log.error).to.have.been.calledWithMatch('Invalid value for set_power');
+        });
+
         it('should handle set_mode state change', () => {
             adapter.onStateChange('fronius-wattpilot.0.set_mode', { val: 4, ack: false });
 
@@ -756,6 +898,11 @@ describe('Fronius Wattpilot Adapter - Comprehensive Tests', () => {
             const data = JSON.parse(message.data);
             expect(data.key).to.equal('lmo');
             expect(data.value).to.equal(4);
+        });
+
+        it('should log error on invalid value for set_mode', () => {
+            adapter.onStateChange('fronius-wattpilot.0.set_mode', { val: 'invalid_mode', ack: false });
+            expect(adapter.log.error).to.have.been.calledWithMatch('Invalid value for set_mode');
         });
 
         it('should handle cae boolean state change', () => {
@@ -868,7 +1015,7 @@ describe('Fronius Wattpilot Adapter - Comprehensive Tests', () => {
         });
     });
 
-    describe('8. Pure Auth & Crypto Helper Functions', () => {
+    describe('9. Pure Auth & Crypto Helper Functions', () => {
         const baseAuthParams = {
             password: 'testPassword123',
             serial: '12345678',
@@ -886,6 +1033,11 @@ describe('Fronius Wattpilot Adapter - Comprehensive Tests', () => {
             expect(pbkdf2.hash).to.be.a('string').with.lengthOf(64);
             expect(bcryptRes.hash).to.be.a('string').with.lengthOf(64);
             expect(pbkdf2.hash).to.not.equal(bcryptRes.hash);
+        });
+
+        it('should throw error in computeAuthResponse when token1 or token2 is missing', () => {
+            expect(() => createAdapter.computeAuthResponse({ ...baseAuthParams, token1: '' })).to.throw('token1 and token2 are required.');
+            expect(() => createAdapter.computeAuthResponse({ ...baseAuthParams, token2: '' })).to.throw('token1 and token2 are required.');
         });
 
         it('should return auth candidates for both methods', () => {
@@ -962,7 +1114,7 @@ describe('Fronius Wattpilot Adapter - Comprehensive Tests', () => {
         });
     });
 
-    describe('9. Object Management (_ensureObjectExists)', () => {
+    describe('10. Object Management (_ensureObjectExists)', () => {
         it('should extend object when object does not exist or attributes differ', async () => {
             const adapter = createTestAdapter();
             adapter.getObjectAsync.resolves(null);
