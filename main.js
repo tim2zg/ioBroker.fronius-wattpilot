@@ -14,6 +14,8 @@ const MESSAGE_TYPE = {
     AUTH_REQUIRED: 'authRequired',
     AUTH_SUCCESS: 'authSuccess',
     AUTH_ERROR: 'authError',
+    FULL_STATUS: 'fullStatus',
+    DELTA_STATUS: 'deltaStatus',
     SET_VALUE: 'setValue',
     SECURED_MSG: 'securedMsg',
     CLEAR_SMIPS: 'clearSmips',
@@ -77,6 +79,129 @@ const ERROR_STATE_MAP = {
 };
 // --- End Constants ---
 
+// --- Standalone Pure Auth & Crypto Functions ---
+
+function generateToken3() {
+    let result = '';
+    for (let i = 0; i < 80; i++) {
+        const digit = i === 0 ? Math.floor(Math.random() * 9) + 1 : Math.floor(Math.random() * 10);
+        result += digit.toString();
+    }
+    return BigInt(result).toString(16).padStart(64, '0').slice(0, 32);
+}
+
+function bcryptBase64Encode(buffer, length) {
+    const BASE64_CODE = './ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let off = 0;
+    const rs = [];
+
+    if (length <= 0 || length > buffer.length) {
+        throw new Error(`Illegal len: ${length}`);
+    }
+
+    while (off < length) {
+        let c1 = buffer[off++] & 0xff;
+        rs.push(BASE64_CODE[(c1 >> 2) & 0x3f]);
+        c1 = (c1 & 0x03) << 4;
+        if (off >= length) {
+            rs.push(BASE64_CODE[c1 & 0x3f]);
+            break;
+        }
+
+        let c2 = buffer[off++] & 0xff;
+        c1 |= (c2 >> 4) & 0x0f;
+        rs.push(BASE64_CODE[c1 & 0x3f]);
+        c1 = (c2 & 0x0f) << 2;
+        if (off >= length) {
+            rs.push(BASE64_CODE[c1 & 0x3f]);
+            break;
+        }
+
+        c2 = buffer[off++] & 0xff;
+        c1 |= (c2 >> 6) & 0x03;
+        rs.push(BASE64_CODE[c1 & 0x3f]);
+        rs.push(BASE64_CODE[c2 & 0x3f]);
+    }
+
+    return rs.join('');
+}
+
+function encodeSerialBase64(serial, length) {
+    if (!/^\d+$/.test(serial)) {
+        throw new Error(`Check serial string - should be digits only: ${serial}`);
+    }
+
+    const vals = Array.from(serial).map(ch => ch.charCodeAt(0) - 48);
+    const b = Buffer.concat([Buffer.alloc(length - vals.length, 0), Buffer.from(vals)]);
+    return bcryptBase64Encode(b, length);
+}
+
+function deriveHashedPassword(password, serial, method) {
+    if (!password) {
+        throw new Error('Password is required.');
+    }
+    if (!serial) {
+        throw new Error('Serial is required.');
+    }
+
+    if (method === 'bcrypt') {
+        const passwordHashSha256 = createHash('sha256').update(password, 'utf8').digest('hex');
+        const serialB64 = encodeSerialBase64(String(serial), 16);
+        const salt = `$2a$08$${serialB64}`;
+        const pwhash = bcrypt.hashSync(passwordHashSha256, salt);
+        return pwhash.slice(salt.length);
+    }
+
+    if (method === 'pbkdf2') {
+        return pbkdf2Sync(password, String(serial), 100000, 256, 'sha512').toString('base64').substring(0, 32);
+    }
+
+    throw new Error(`Unsupported auth method: ${method}`);
+}
+
+function computeAuthResponse({ password, serial, token1, token2, method, token3 }) {
+    if (!token1 || !token2) {
+        throw new Error('token1 and token2 are required.');
+    }
+
+    const derivedPassword = deriveHashedPassword(password, serial, method);
+    const finalToken3 = token3 || generateToken3();
+
+    const hash1 = createHash('sha256')
+        .update(token1 + derivedPassword)
+        .digest('hex');
+    const hash = createHash('sha256')
+        .update(finalToken3 + token2 + hash1)
+        .digest('hex');
+
+    return {
+        token3: finalToken3,
+        hash,
+        hashedPassword: derivedPassword,
+    };
+}
+
+function computeAuthCandidates({ password, serial, token1, token2, token3 }) {
+    return {
+        pbkdf2: computeAuthResponse({
+            password,
+            serial,
+            token1,
+            token2,
+            method: 'pbkdf2',
+            token3,
+        }),
+        bcrypt: computeAuthResponse({
+            password,
+            serial,
+            token1,
+            token2,
+            method: 'bcrypt',
+            token3,
+        }),
+    };
+}
+
 class FroniusWattpilot extends utils.Adapter {
     constructor(options) {
         super({ ...options, name: ADAPTER_NAME });
@@ -90,6 +215,9 @@ class FroniusWattpilot extends utils.Adapter {
         this.connectionUptimeMonitor = null;
         this.createdStatesRegistry = new Set(); // Tracks API keys for which states have been created
         this.customParamsToParse = []; // Parsed from config.addParam
+        this.authRetryMethod = null;
+        this.lastAuthMethod = null;
+        this.authRetryTimer = null;
 
         this.STATE_DEFINITIONS = this._getStaticStateDefinitions();
         this.STATE_CHANGE_HANDLERS = this._getStaticStateChangeHandlers();
@@ -141,120 +269,96 @@ class FroniusWattpilot extends utils.Adapter {
                 write: true,
                 valueMap: CHARGING_MODE_MAP_API_TO_VAL,
             },
-            car: {
-                id: 'carConnected',
-                type: 'string',
-                valueMap: CAR_STATE_MAP,
-                rateLimit: true,
-            },
-            alw: { id: 'AllowCharging', type: 'boolean', rateLimit: true },
-            nrg: {
-                id: 'nrgData',
-                type: 'object',
-                rateLimit: true,
-                customHandler: this._handleNrgData.bind(this),
-            },
-            amp: { id: 'amp', type: 'number', write: true },
-            version: { id: 'version', type: 'string', rateLimit: true }, // API Version?
-            fwv: { id: 'firmware', type: 'string', rateLimit: true },
-            wss: { id: 'WifiSSID', type: 'string', rateLimit: true },
+            car: { id: 'carConnected', type: 'string', valueMap: CAR_STATE_MAP },
+            alw: { id: 'allowCharging', type: 'boolean' },
+            amp: { id: 'amp', type: 'number' },
             upd: {
                 id: 'updateAvailable',
                 type: 'boolean',
+                rateLimit: true,
                 valueMap: { 0: false, 1: true },
-                rateLimit: true,
             },
-            fna: { id: 'hostname', type: 'string', rateLimit: true },
-            ffna: { id: 'serial', type: 'string', rateLimit: true }, // Full Friendly Name (Serial)
-            utc: { id: 'TimeStamp', type: 'string', rateLimit: true },
-            pvopt_averagePGrid: {
-                id: 'PVUselessPower',
-                type: 'number',
-                rateLimit: true,
-            },
-            lpsc: { id: 'lpsc', type: 'number', write: true },
-            awp: {
-                id: 'awp',
-                type: 'number',
-                write: true,
+            modelStatus: { id: 'modelStatus', type: 'string' },
+            nrg: {
+                // Handled specially, produces multiple states
+                customHandler: this._handleNrgData.bind(this),
                 rateLimit: true,
             },
         };
     }
 
     _getStaticStateChangeHandlers() {
-        // Maps ioBroker state IDs (full path) to handler methods for sending commands
+        // Handlers for specific state changes (e.g. controls like 'set_power')
+        // key: ioBroker state ID (without namespace)
+        // handler: function to process the change
         return {
-            [`${this.namespace}.set_power`]: state => this._sendSecureCommand('amp', parseInt(state.val)),
-            [`${this.namespace}.set_mode`]: state => this._sendSecureCommand('lmo', parseInt(state.val)),
-            [`${this.namespace}.set_state`]: this._handleSetGenericStateCommand,
-            [`${this.namespace}.amp`]: state => this._sendSecureCommand('amp', parseInt(state.val)),
-            [`${this.namespace}.cae`]: state =>
-                this._sendSecureCommand('cae', state.val === true || state.val === 'true'),
-            [`${this.namespace}.AccessState`]: state => {
-                const apiVal = ACCESS_STATE_MAP_VAL_TO_API[state.val.toString().toLowerCase()];
-                if (apiVal !== undefined) {
-                    this._sendSecureCommand('acs', apiVal);
-                } else {
-                    this.log.warn(`Invalid AccessState value: ${state.val}`);
-                }
-            },
-            [`${this.namespace}.cableLock`]: state => {
-                const apiVal = CABLE_LOCK_MODE_MAP_VAL_TO_API[state.val.toString().toLowerCase()];
-                if (apiVal !== undefined) {
-                    this._sendSecureCommand('ust', apiVal);
-                } else {
-                    this.log.warn(`Invalid cableLock value: ${state.val}`);
-                }
-            },
-            [`${this.namespace}.mode`]: state => {
-                const apiVal = CHARGING_MODE_MAP_VAL_TO_API[state.val.toString().toLowerCase()];
-                if (apiVal !== undefined) {
-                    this._sendSecureCommand('lmo', apiVal);
-                } else {
-                    this.log.warn(`Invalid mode value: ${state.val}`);
-                }
-            },
+            set_power: this._handleSetPowerChange.bind(this),
+            set_mode: this._handleSetModeChange.bind(this),
+            set_state: this._handleSetGenericStateCommand.bind(this),
+            AccessState: this._handleAccessStateChange.bind(this),
+            cableLock: this._handleCableLockChange.bind(this),
+            mode: this._handleModeChange.bind(this),
+            cae: (id, state) => this._sendSecureCommand('cae', state.val),
         };
     }
 
     async onReady() {
-        this.setState('info.connection', false, true);
+        this.log.debug(`Adapter config: ${JSON.stringify(this.config)}`);
 
         if (!this._validateConfig()) {
-            return; // Stop if config is invalid
+            this.log.error('Configuration is invalid. Please check the settings. Adapter will stop.');
+            this.setState('info.connection', false, true);
+            return;
         }
 
-        if (this.config.addParam) {
+        if (this.config.addParam && typeof this.config.addParam === 'string') {
             this.customParamsToParse = this.config.addParam
                 .split(';')
-                .map(p => p.trim())
-                .filter(p => p);
+                .map(s => s.trim())
+                .filter(s => s.length > 0);
+            this.log.info(`Configured custom parameters to parse: ${this.customParamsToParse.join(', ')}`);
         }
 
         await this._initializeControlStates();
-        this.connectionUptimeMonitor = this.setInterval(this._checkUptime.bind(this), UPTIME_CHECK_INTERVAL_MS);
-
         this._createWsConnection();
+
+        // Monitor connection uptime periodically
+        this.connectionUptimeMonitor = this.setInterval(this._checkUptime.bind(this), UPTIME_CHECK_INTERVAL_MS);
+    }
+
+    _checkUptime() {
+        const timeSinceLastMessage = Date.now() - this.lastMessageTime;
+        if (timeSinceLastMessage > UPTIME_CHECK_INTERVAL_MS) {
+            this.log.warn(
+                `No message received in the last ${UPTIME_CHECK_INTERVAL_MS / 1000} seconds. Connection might be dead. Attempting to reconnect.`,
+            );
+            this.setState('info.connection', false, true);
+            if (this.ws) {
+                this.ws.terminate(); // Force close existing connection if any
+            }
+            this._createWsConnection();
+        } else {
+            this.log.debug('Connection seems active.');
+        }
     }
 
     _getWebSocketUrl() {
         if (this.config.cloud) {
-            const serial = this.config['serial-number'] || DEFAULT_HOST_CLOUD_SERIAL;
-            return `${DEFAULT_HOST_CLOUD_PREFIX}${serial}${DEFAULT_HOST_CLOUD_SUFFIX}`;
+            return `${DEFAULT_HOST_CLOUD_PREFIX}${this.config['serial-number']}${DEFAULT_HOST_CLOUD_SUFFIX}`;
         }
-        return `ws://${this.config['ip-host'] || 'localhost'}/ws`;
+        const host = this.config['ip-host'] || 'localhost';
+        return `ws://${host}/ws`;
     }
 
     _validateConfig() {
-        const hostToConnect = this._getWebSocketUrl();
-        const password = this.config.pass;
-
         let isValid = true;
-        if (!password || password === DEFAULT_PASSWORD_PLACEHOLDER) {
+        const hostToConnect = this._getWebSocketUrl();
+
+        if (!this.config.pass || this.config.pass === DEFAULT_PASSWORD_PLACEHOLDER) {
             this.log.error('Password is not configured or is the default placeholder.');
             isValid = false;
         }
+
         if (this.config.cloud) {
             if (!this.config['serial-number'] || this.config['serial-number'] === DEFAULT_HOST_CLOUD_SERIAL) {
                 this.log.error(
@@ -315,7 +419,11 @@ class FroniusWattpilot extends utils.Adapter {
             try {
                 const messageString = data.toString();
                 const messageData = JSON.parse(messageString);
-                this._handleWebSocketMessage(messageData);
+                Promise.resolve(this._handleWebSocketMessage(messageData)).catch(err => {
+                    this.log.error(
+                        `Unhandled error while processing message ${messageData.type || 'unknown'}: ${err.message}`,
+                    );
+                });
             } catch (e) {
                 this.log.error(`Error parsing JSON message: ${e.message}. Data: ${data.toString()}`);
             }
@@ -330,9 +438,72 @@ class FroniusWattpilot extends utils.Adapter {
         this.ws.on('close', (code, reason) => {
             this.log.info(`WebSocket connection closed. Code: ${code}, Reason: ${reason ? reason.toString() : 'N/A'}`);
             this.setState('info.connection', false, true);
+            this.sseToken = null;
             this.hashedPassword = null; // Invalidate hash on disconnect
-            // Reconnect logic is handled by _checkUptime
+
+            if (this.authRetryMethod) {
+                if (this.authRetryTimer) {
+                    this.clearTimeout(this.authRetryTimer);
+                }
+                this.authRetryTimer = this.setTimeout(() => {
+                    this.authRetryTimer = null;
+                    if (this.authRetryMethod) {
+                        this.log.warn(`Retrying authentication with ${this.authRetryMethod}.`);
+                        this._createWsConnection();
+                    }
+                }, 1000);
+            }
         });
+    }
+
+    _maskToken(value) {
+        if (!value || typeof value !== 'string') {
+            return 'n/a';
+        }
+        if (value.length <= 8) {
+            return value;
+        }
+        return `${value.slice(0, 4)}…${value.slice(-4)}`;
+    }
+
+    _shouldUseBcryptAuthentication(message) {
+        if (this.authRetryMethod === 'bcrypt') {
+            return true;
+        }
+        if (this.authRetryMethod === 'pbkdf2') {
+            return false;
+        }
+        if (this.config.useBcrypt === true) {
+            return true;
+        }
+        if (this.config.useBcrypt === false) {
+            return message.hash === 'bcrypt';
+        }
+        return message.hash === 'bcrypt';
+    }
+
+    _handleAuthErrorRetry() {
+        if (!this.lastAuthMethod) {
+            return;
+        }
+
+        if (this.authRetryMethod && this.authRetryMethod === this.lastAuthMethod) {
+            this.log.warn(`Authentication retry with ${this.lastAuthMethod} also failed; stopping fallback loop.`);
+            this._clearAuthRetryState();
+            return;
+        }
+
+        this.authRetryMethod = this.lastAuthMethod === 'bcrypt' ? 'pbkdf2' : 'bcrypt';
+        this.log.warn(`Authentication failed with ${this.lastAuthMethod}; will retry with ${this.authRetryMethod}.`);
+    }
+
+    _clearAuthRetryState() {
+        this.lastAuthMethod = null;
+        this.authRetryMethod = null;
+        if (this.authRetryTimer) {
+            this.clearTimeout(this.authRetryTimer);
+            this.authRetryTimer = null;
+        }
     }
 
     async _handleWebSocketMessage(message) {
@@ -344,21 +515,38 @@ class FroniusWattpilot extends utils.Adapter {
                 break;
             case MESSAGE_TYPE.HELLO:
                 this.sseToken = message.serial;
-                this.log.info(`Received HELLO, SSE token: ${this.sseToken}`);
+                this.log.info(
+                    `Received HELLO: serial=${this.sseToken}, protocol=${message.protocol ?? 'n/a'}, secured=${message.secured ?? 'n/a'}`,
+                );
                 break;
             case MESSAGE_TYPE.AUTH_REQUIRED:
+                this.log.debug(
+                    `Received AUTH_REQUIRED: token1=${this._maskToken(message.token1)}, token2=${this._maskToken(message.token2)}`,
+                );
                 await this._handleAuthRequiredMessage(message);
                 break;
             case MESSAGE_TYPE.AUTH_SUCCESS:
+                this._clearAuthRetryState();
                 await this.setState('info.connection', true, true);
                 this.log.info('Authentication successful. Connected to Wattpilot.');
                 break;
             case MESSAGE_TYPE.AUTH_ERROR:
-                this.log.error('Authentication failed. Please check your password.');
+                this._handleAuthErrorRetry();
+                this.log.error(
+                    `Authentication failed. Please check your password. Server message: ${message.message || 'n/a'}`,
+                );
                 await this.setState('info.connection', false, true);
+                this.sseToken = null;
+                this.hashedPassword = null;
                 if (this.ws) {
                     this.ws.close();
                 } // Close connection on auth error
+                break;
+            case MESSAGE_TYPE.FULL_STATUS:
+            case MESSAGE_TYPE.DELTA_STATUS:
+                if (message.status && typeof message.status === 'object') {
+                    await this._parseStatusMessage(message.status);
+                }
                 break;
             case MESSAGE_TYPE.CLEAR_SMIPS:
                 break;
@@ -401,58 +589,42 @@ class FroniusWattpilot extends utils.Adapter {
             this.log.error('Authentication required, but password is not configured.');
             return;
         }
+        if (!message.token1 || !message.token2) {
+            this.log.error('Authentication required, but token1/token2 are missing from the server message.');
+            return;
+        }
 
         try {
-            // === Python: ran = random.randrange(10**80)
-            const ran = this.__randomBigInt(80);
-            // === Python: "%064x" % ran
-            let token3 = this.__formatHex(ran).slice(0, 32);
-            let hashedPassword;
+            const useBcrypt = this._shouldUseBcryptAuthentication(message);
+            this.lastAuthMethod = useBcrypt ? 'bcrypt' : 'pbkdf2';
+            const token3 = generateToken3();
 
-            if (message.hash === 'pbkdf2') {
-                const iterations = 100000;
-                const keylen = 256;
-                const digest = 'sha512';
-                const derivedKey = pbkdf2Sync(this.config.pass, this.sseToken, iterations, keylen, digest);
-                this.hashedPassword = derivedKey.toString('base64').substring(0, 32);
-                hashedPassword = this.hashedPassword;
-            } else {
-                const passwordHashSha256 = createHash('sha256').update(this.config.pass, 'utf8').digest('hex');
+            this.log.info(
+                `Preparing authentication: method=${this.lastAuthMethod}, config.useBcrypt=${this.config.useBcrypt === true}, retry=${this.authRetryMethod || 'none'}, token3=${this._maskToken(token3)}`,
+            );
 
-                const serial = String(this.sseToken || '');
-                const serialB64 = this.__bcryptjs_encodeBase64(serial, 16);
-
-                const iterations = 8;
-                let salt = '$2a$';
-                if (iterations < 10) {
-                    salt += '0';
-                }
-                salt += `${iterations}$${serialB64}`;
-
-                const pwhash = bcrypt.hashSync(passwordHashSha256, salt);
-                this.hashedPassword = pwhash.slice(salt.length);
-                hashedPassword = this.hashedPassword;
-            }
-
-            // === Python: hash1 = sha256(token1 + hashedPassword)
-            const hash1 = createHash('sha256')
-                .update(message.token1 + hashedPassword)
-                .digest('hex');
-
-            // === Python: hash = sha256(token3 + token2 + hash1)
-            const finalHash = createHash('sha256')
-                .update(token3 + message.token2 + hash1)
-                .digest('hex');
-
-            const authResponse = {
-                type: 'auth',
+            const authResponse = computeAuthResponse({
+                password: this.config.pass,
+                serial: this.sseToken,
+                token1: message.token1,
+                token2: message.token2,
+                method: this.lastAuthMethod,
                 token3,
-                hash: finalHash,
+            });
+
+            this.hashedPassword = authResponse.hashedPassword;
+
+            const response = {
+                type: 'auth',
+                token3: authResponse.token3,
+                hash: authResponse.hash,
             };
 
-            this.log.debug('Sending authentication response (Python-compatible).');
+            this.log.debug(
+                `Sending authentication response: token3=${this._maskToken(response.token3)}, hash=${this._maskToken(response.hash)}`,
+            );
             if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-                this.ws.send(JSON.stringify(authResponse));
+                this.ws.send(JSON.stringify(response));
             }
         } catch (err) {
             this.log.error(`Error during authentication process: ${err.message}`);
@@ -460,173 +632,138 @@ class FroniusWattpilot extends utils.Adapter {
         }
     }
 
-    async _parseStatusMessage(statusData) {
-        const enableDynamic = this.config.parser === false; // 'parser' in config means 'strict', so false means dynamic
+    async _parseStatusMessage(statusObject) {
+        for (const [apiKey, apiValue] of Object.entries(statusObject)) {
+            const definition = this.STATE_DEFINITIONS[apiKey];
 
-        for (const apiKey in statusData) {
-            if (!Object.prototype.hasOwnProperty.call(statusData, apiKey)) {
-                continue;
-            }
-
-            const apiValue = statusData[apiKey];
-            const stateDef = this.STATE_DEFINITIONS[apiKey];
-
-            if (stateDef) {
-                await this._processDefinedState(apiKey, apiValue, stateDef);
-            } else if (this.customParamsToParse.includes(apiKey)) {
-                await this._processDynamicOrCustomState(apiKey, apiValue, true);
-            } else if (enableDynamic) {
-                await this._processDynamicOrCustomState(apiKey, apiValue, false);
+            if (definition) {
+                if (definition.customHandler) {
+                    await definition.customHandler(apiValue, definition);
+                } else {
+                    await this._setSimpleState(apiKey, apiValue, definition);
+                }
+            } else if (this._shouldParseCustomField(apiKey)) {
+                await this._parseDynamicField(apiKey, apiValue);
+            } else {
+                this.log.debug(`Ignored unhandled parameter from Wattpilot: ${apiKey} = ${JSON.stringify(apiValue)}`);
             }
         }
     }
 
-    async _processDefinedState(apiKey, apiValue, stateDef) {
-        let processedValue = apiValue;
-
-        if (stateDef.valueMap && stateDef.valueMap[apiValue] !== undefined) {
-            processedValue = stateDef.valueMap[apiValue];
-        } else if (typeof apiValue === 'number' && stateDef.valueFactor) {
-            // Korrekte Behandlung von Float-Werten bei der Anwendung eines Faktors
-            processedValue = parseFloat((apiValue * stateDef.valueFactor).toFixed(6));
-        } else if (typeof apiValue === 'string' && !isNaN(parseFloat(apiValue)) && stateDef.type === 'number') {
-            // Strings, die Zahlen repräsentieren, in echte Zahlen umwandeln
-            processedValue = parseFloat(apiValue);
-            if (stateDef.valueFactor) {
-                processedValue = parseFloat((processedValue * stateDef.valueFactor).toFixed(6));
-            }
-        } else if ((Array.isArray(apiValue) || typeof apiValue === 'object') && stateDef.type === 'string') {
-            processedValue = JSON.stringify(apiValue);
+    _shouldParseCustomField(apiKey) {
+        if (!this.config.parser) {
+            return true; // If parser is false, parse all parameters
         }
-
-        if (!this.createdStatesRegistry.has(apiKey)) {
-            await this._ensureObjectExists(stateDef.id, 'value', stateDef.type, true, stateDef.write || false);
-            if (stateDef.write) {
-                this.subscribeStates(stateDef.id);
-            }
-            this.createdStatesRegistry.add(apiKey);
-        }
-
-        if (stateDef.rateLimit && !this._shouldUpdateByRateLimit(apiKey)) {
-            return; // Skip update due to rate limit
-        }
-
-        if (stateDef.customHandler) {
-            await stateDef.customHandler(apiKey, apiValue, stateDef);
-        } else {
-            await this.setStateAsync(stateDef.id, { val: processedValue, ack: true });
-        }
-
-        if (stateDef.rateLimit) {
-            this._updateRateLimitTimestamp(apiKey);
-        }
+        return this.customParamsToParse.includes(apiKey);
     }
 
-    async _handleNrgData(apiKey, apiValueArray) {
-        // apiValueArray is like [V1, V2, V3, VN, A1, A2, A3, P1, P2, P3, PN, PTotal]
-        // Power values are in W, convert to kW for consistency if desired (original code used 0.001 for kW)
-        const nrgStates = [
-            { id: 'voltage1', value: apiValueArray[0] },
-            { id: 'voltage2', value: apiValueArray[1] },
-            { id: 'voltage3', value: apiValueArray[2] },
-            { id: 'voltageN', value: apiValueArray[3] },
-            { id: 'amps1', value: apiValueArray[4] },
-            { id: 'amps2', value: apiValueArray[5] },
-            { id: 'amps3', value: apiValueArray[6] },
-            { id: 'power1', value: apiValueArray[7] * 0.001 },
-            { id: 'power2', value: apiValueArray[8] * 0.001 },
-            { id: 'power3', value: apiValueArray[9] * 0.001 },
-            { id: 'powerN', value: apiValueArray[10] * 0.001 },
-            { id: 'power', value: apiValueArray[11] * 0.001 }, // Total power
+    async _setSimpleState(apiKey, apiValue, definition) {
+        if (definition.rateLimit && this._isRateLimited(apiKey)) {
+            return;
+        }
+
+        const stateId = definition.id;
+        const targetType = definition.type;
+        let valueToSet = apiValue;
+
+        if (definition.valueMap && definition.valueMap[apiValue] !== undefined) {
+            valueToSet = definition.valueMap[apiValue];
+        } else if (typeof definition.valueFactor === 'number' && typeof apiValue === 'number') {
+            valueToSet = apiValue * definition.valueFactor;
+        } else if (targetType === 'string' && typeof apiValue === 'object') {
+            valueToSet = JSON.stringify(apiValue);
+        }
+
+        await this.setStateAsync(stateId, { val: valueToSet, ack: true });
+    }
+
+    async _handleNrgData(nrgArray, definition) {
+        if (definition.rateLimit && this._isRateLimited('nrg')) {
+            return;
+        }
+
+        if (!Array.isArray(nrgArray) || nrgArray.length < 12) {
+            this.log.warn(`Invalid 'nrg' array received: ${JSON.stringify(nrgArray)}`);
+            return;
+        }
+
+        const nrgStateMap = [
+            'voltage1',
+            'voltage2',
+            'voltage3',
+            'voltageN',
+            'amps1',
+            'amps2',
+            'amps3',
+            'power1',
+            'power2',
+            'power3',
+            'powerN',
+            'power',
         ];
 
-        for (const nrgState of nrgStates) {
-            if (apiValueArray.length > nrgStates.indexOf(nrgState) && nrgState.value !== undefined) {
-                // Check if value exists in array
-                const fullStateId = `${apiKey}_${nrgState.id}`; // e.g., nrgData_voltage1
-                if (!this.createdStatesRegistry.has(fullStateId)) {
-                    await this._ensureObjectExists(nrgState.id, 'value', 'number', true, false); // Assuming nrg states are read-only
-                    this.createdStatesRegistry.add(fullStateId); // Use a unique key for registry
-                }
-                await this.setStateAsync(nrgState.id, {
-                    val: nrgState.value,
-                    ack: true,
-                });
+        for (let i = 0; i < 12; i++) {
+            const stateId = nrgStateMap[i];
+            let value = nrgArray[i];
+            // Wattpilot sends power in W, convert to kW for consistency with standard units
+            if (stateId.startsWith('power')) {
+                value = value * 0.001;
             }
+            await this.setStateAsync(stateId, { val: value, ack: true });
         }
     }
 
-    async _processDynamicOrCustomState(apiKey, apiValue, isCustomViaConfig) {
+    async _parseDynamicField(apiKey, apiValue) {
         if (apiValue === null || apiValue === undefined) {
             return;
         }
 
-        if (isCustomViaConfig && this.rateLimitTimeouts[apiKey] && !this._shouldUpdateByRateLimit(apiKey)) {
-            return; // Apply rate limit for custom params if they were already created
-        }
+        let type = typeof apiValue;
+        let role = 'state';
+        let value = apiValue;
 
-        let type = 'string';
-        let valueToSet = apiValue;
-
-        if (typeof apiValue === 'number') {
-            type = 'number';
-            valueToSet = apiValue;
-        } else if (typeof apiValue === 'boolean') {
-            type = 'boolean';
-        } else if (Array.isArray(apiValue) || typeof apiValue === 'object') {
+        if (type === 'object') {
+            value = JSON.stringify(apiValue);
             type = 'string';
-            valueToSet = JSON.stringify(apiValue);
-        } else if (typeof apiValue === 'string') {
-            if (!isNaN(parseFloat(apiValue))) {
+            role = 'json';
+        } else if (type === 'number') {
+            role = 'value';
+        } else if (type === 'boolean') {
+            role = 'indicator';
+        } else if (type === 'string') {
+            role = 'text';
+            if (!isNaN(Number(apiValue)) && !isNaN(parseFloat(apiValue))) {
+                value = parseFloat(apiValue);
                 type = 'number';
-                valueToSet = parseFloat(apiValue);
+                role = 'value';
             }
         }
 
-        if (apiKey === 'rcd' && typeof apiValue !== 'number') {
+        if (apiKey === 'rcd') {
             type = 'number';
+            role = 'value';
+            value = parseInt(apiValue, 10);
         }
 
+        // Ensure object exists before setting state
         if (!this.createdStatesRegistry.has(apiKey)) {
-            await this._ensureObjectExists(apiKey, 'value', type, true, true); // Hier write=true gesetzt
-            this.subscribeStates(apiKey); // State abonnieren, da schreibbar
+            await this._ensureObjectExists(apiKey, role, type, true, false);
             this.createdStatesRegistry.add(apiKey);
         }
 
-        await this.setStateAsync(apiKey, { val: valueToSet, ack: true });
-        if (isCustomViaConfig) {
-            this._updateRateLimitTimestamp(apiKey);
+        await this.setStateAsync(apiKey, { val: value, ack: true });
+    }
+
+    _isRateLimited(apiKey) {
+        const now = Date.now();
+        const minIntervalMs = (this.config.freq || 0) * 1000;
+        const lastUpdate = this.rateLimitTimeouts[apiKey] || 0;
+
+        if (now - lastUpdate < minIntervalMs) {
+            return true;
         }
-    }
-
-    _shouldUpdateByRateLimit(apiKey) {
-        const freqMillis = (this.config.freq || 10) * 1000; // Default to 10s if not set
-        return !(this.rateLimitTimeouts[apiKey] && this.rateLimitTimeouts[apiKey] + freqMillis > Date.now());
-    }
-
-    _updateRateLimitTimestamp(apiKey) {
-        this.rateLimitTimeouts[apiKey] = Date.now();
-    }
-
-    _checkUptime() {
-        this.log.debug('Checking Wattpilot connection uptime...');
-        if (Date.now() - this.lastMessageTime > UPTIME_CHECK_INTERVAL_MS) {
-            this.log.warn(
-                `No message received for over ${UPTIME_CHECK_INTERVAL_MS / 1000 / 60} minutes. Attempting to reconnect.`,
-            );
-            this.setState('info.connection', false, true);
-            if (this.ws) {
-                this.ws.terminate(); // Force close existing connection
-            }
-            // Explicitly set ws to null so _createWsConnection doesn't think it's still connecting
-            this.ws = null;
-            this._createWsConnection();
-        } else {
-            // Send a ping-like request if protocol supports it or just keep connection alive
-            // For Wattpilot, regular status updates should keep it alive. If not, consider a periodic 'getAllValues' if available.
-            // For now, assume activity means connection is fine.
-            this.log.debug('Connection seems active.');
-        }
+        this.rateLimitTimeouts[apiKey] = now;
+        return false;
     }
 
     async _ensureObjectExists(id, role, type, read = true, write = false) {
@@ -634,8 +771,8 @@ class FroniusWattpilot extends utils.Adapter {
             const obj = await this.getObjectAsync(id);
             if (
                 !obj ||
-                obj.common.type !== type ||
                 obj.common.role !== role ||
+                obj.common.type !== type ||
                 obj.common.read !== read ||
                 obj.common.write !== write
             ) {
@@ -651,10 +788,11 @@ class FroniusWattpilot extends utils.Adapter {
                     },
                     native: {},
                 });
-                this.log.debug(`Object ${this.namespace}.${id} created/updated.`);
+                this.log.debug(`Object ${this.namespace}.${id} created or updated.`);
             }
-        } catch (error) {
-            this.log.error(`Error ensuring object ${id}: ${error}`);
+        } catch (e) {
+            this.log.error(`Error ensuring object ${id}: ${e.message}`);
+            // Fallback: try setObjectNotExistsAsync
             await this.setObjectNotExistsAsync(id, {
                 type: 'state',
                 common: {
@@ -683,6 +821,7 @@ class FroniusWattpilot extends utils.Adapter {
                 this.ws.close();
                 this.ws = null;
             }
+            this._clearAuthRetryState();
             this.setState('info.connection', false, true);
             this.log.info('Cleanup complete. Adapter stopped.');
             callback();
@@ -705,35 +844,79 @@ class FroniusWattpilot extends utils.Adapter {
                 return;
             }
 
-            const handler = this.STATE_CHANGE_HANDLERS[id];
-            if (handler) {
-                try {
-                    handler.call(this, state);
-                } catch (e) {
-                    this.log.error(`Error processing state change for ${id}: ${e.message}`);
-                }
+            const stateName = id.replace(`${this.namespace}.`, '');
+
+            const specificHandler = this.STATE_CHANGE_HANDLERS[stateName];
+            if (specificHandler) {
+                specificHandler(id, state);
             } else {
-                // Generischer Handler für alle anderen States
-                this._handleGenericStateChange(id, state);
+                this._handleGenericStateChange(stateName, state);
             }
         }
     }
 
-    // Neue generische Handler-Methode
-    _handleGenericStateChange(id, state) {
-        const idParts = id.split('.');
-        const stateName = idParts[idParts.length - 1];
+    _handleSetPowerChange(id, state) {
+        const amp = parseInt(state.val, 10);
+        if (!isNaN(amp)) {
+            this.log.info(`Setting charging current (amp) to ${amp} A`);
+            this._sendSecureCommand('amp', amp);
+        } else {
+            this.log.error(`Invalid value for set_power: ${state.val}`);
+        }
+    }
 
-        // Zuerst prüfen, ob ein Eintrag in STATE_DEFINITIONS existiert
-        for (const apiKey in this.STATE_DEFINITIONS) {
-            if (this.STATE_DEFINITIONS[apiKey].id === stateName) {
+    _handleSetModeChange(id, state) {
+        const mode = parseInt(state.val, 10);
+        if (!isNaN(mode)) {
+            this.log.info(`Setting charging mode (lmo) to ${mode}`);
+            this._sendSecureCommand('lmo', mode);
+        } else {
+            this.log.error(`Invalid value for set_mode: ${state.val}`);
+        }
+    }
+
+    _handleAccessStateChange(id, state) {
+        const valStr = state.val.toString().toLowerCase();
+        const apiVal = ACCESS_STATE_MAP_VAL_TO_API[valStr];
+        if (apiVal !== undefined) {
+            this.log.info(`Setting AccessState (acs) to ${apiVal} (${state.val})`);
+            this._sendSecureCommand('acs', apiVal);
+        } else {
+            this.log.warn(`Invalid AccessState value: ${state.val}`);
+        }
+    }
+
+    _handleCableLockChange(id, state) {
+        const valStr = state.val.toString().toLowerCase();
+        const apiVal = CABLE_LOCK_MODE_MAP_VAL_TO_API[valStr];
+        if (apiVal !== undefined) {
+            this.log.info(`Setting cableLock (ust) to ${apiVal} (${state.val})`);
+            this._sendSecureCommand('ust', apiVal);
+        } else {
+            this.log.warn(`Invalid cableLock value: ${state.val}`);
+        }
+    }
+
+    _handleModeChange(id, state) {
+        const valStr = state.val.toString().toLowerCase();
+        const apiVal = CHARGING_MODE_MAP_VAL_TO_API[valStr];
+        if (apiVal !== undefined) {
+            this.log.info(`Setting mode (lmo) to ${apiVal} (${state.val})`);
+            this._sendSecureCommand('lmo', apiVal);
+        } else {
+            this.log.warn(`Invalid mode value: ${state.val}`);
+        }
+    }
+
+    _handleGenericStateChange(stateName, state) {
+        // Versuch, den apiKey aus STATE_DEFINITIONS anhand der id zu finden
+        for (const [apiKey, def] of Object.entries(this.STATE_DEFINITIONS)) {
+            if (def.id === stateName && def.write) {
                 let value = state.val;
-
-                // Umkehrung der valueMap verwenden, falls vorhanden
-                const stateDef = this.STATE_DEFINITIONS[apiKey];
-                if (stateDef.valueMap) {
-                    const reverseMap = Object.entries(stateDef.valueMap).reduce((acc, [key, val]) => {
-                        acc[val.toString().toLowerCase()] = key;
+                // Falls eine valueMap existiert, versuchen wir das Reverse-Mapping
+                if (def.valueMap) {
+                    const reverseMap = Object.entries(def.valueMap).reduce((acc, [k, v]) => {
+                        acc[v.toString().toLowerCase()] = k;
                         return acc;
                     }, {});
 
@@ -813,66 +996,35 @@ class FroniusWattpilot extends utils.Adapter {
         let result = '';
         const digitsNum = typeof digits === 'bigint' ? Number(digits) : digits;
         for (let i = 0; i < digitsNum; i++) {
-            let digit = i === 0 ? Math.floor(Math.random() * 9) + 1 : Math.floor(Math.random() * 10);
+            const digit = i === 0 ? Math.floor(Math.random() * 9) + 1 : Math.floor(Math.random() * 10);
             result += digit.toString();
         }
         return BigInt(result);
     }
 
     __formatHex(bigint) {
-        let hex = bigint.toString(16);
-        return hex.padStart(64, '0');
+        return bigint.toString(16).padStart(64, '0');
     }
 
     __bcryptjs_encodeBase64(s, length) {
-        if (/^\d+$/.test(s)) {
-            const vals = Array.from(s).map(ch => ch.charCodeAt(0) - 48);
-            const b = Buffer.concat([Buffer.alloc(length - vals.length, 0), Buffer.from(vals)]);
-            return this.__bcryptjs_base64_encode(b, length);
-        }
-        this.log.error(`__bcryptjs_encodeBase64: check serial string - should be digits only: ${s}`);
-        throw new Error(`Check serial string - should be digits only: ${s}`);
+        return encodeSerialBase64(s, length);
     }
 
     __bcryptjs_base64_encode(b, length) {
-        const BASE64_CODE = './ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        let off = 0;
-        let rs = [];
-
-        if (length <= 0 || length > b.length) {
-            throw new Error(`Illegal len: ${length}`);
-        }
-
-        while (off < length) {
-            let c1 = b[off++] & 0xff;
-            rs.push(BASE64_CODE[(c1 >> 2) & 0x3f]);
-            c1 = (c1 & 0x03) << 4;
-            if (off >= length) {
-                rs.push(BASE64_CODE[c1 & 0x3f]);
-                break;
-            }
-
-            let c2 = b[off++] & 0xff;
-            c1 |= (c2 >> 4) & 0x0f;
-            rs.push(BASE64_CODE[c1 & 0x3f]);
-            c1 = (c2 & 0x0f) << 2;
-            if (off >= length) {
-                rs.push(BASE64_CODE[c1 & 0x3f]);
-                break;
-            }
-
-            c2 = b[off++] & 0xff;
-            c1 |= (c2 >> 6) & 0x03;
-            rs.push(BASE64_CODE[c1 & 0x3f]);
-            rs.push(BASE64_CODE[c2 & 0x3f]);
-        }
-
-        return rs.join('');
+        return bcryptBase64Encode(b, length);
     }
 }
 
 if (require.main !== module) {
-    module.exports = options => new FroniusWattpilot(options);
+    const factory = options => new FroniusWattpilot(options);
+    factory.FroniusWattpilot = FroniusWattpilot;
+    factory.computeAuthCandidates = computeAuthCandidates;
+    factory.computeAuthResponse = computeAuthResponse;
+    factory.deriveHashedPassword = deriveHashedPassword;
+    factory.generateToken3 = generateToken3;
+    factory.encodeSerialBase64 = encodeSerialBase64;
+    factory.bcryptBase64Encode = bcryptBase64Encode;
+    module.exports = factory;
 } else {
     (() => new FroniusWattpilot())();
 }

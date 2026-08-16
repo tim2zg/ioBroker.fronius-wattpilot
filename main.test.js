@@ -1,30 +1,35 @@
-"use strict";
+'use strict';
 
-/**
- * This is a dummy TypeScript test file using chai and mocha
- *
- * It's automatically excluded from npm and its build output is excluded from both git and npm.
- * It is advised to test all your modules with accompanying *.test.js-files
- */
+const { expect } = require('chai');
+const EventEmitter = require('node:events');
+const proxyquire = require('proxyquire').noPreserveCache();
 
-// tslint:disable:no-unused-expression
+class MockAdapter extends EventEmitter {
+    constructor(options = {}) {
+        super();
+        this.name = options.name || 'fronius-wattpilot';
+    }
+}
 
-const { expect } = require("chai");
-// import { functionToTest } from "./moduleToTest";
-
-describe("module to test => function to test", () => {
-	// initializing logic
-	const expected = 5;
-
-	it(`should return ${expected}`, () => {
-		const result = 5;
-		// assign result a value from functionToTest
-		expect(result).to.equal(expected);
-		// or using the should() syntax
-		result.should.equal(expected);
-	});
-	// ... more tests => it
-
+const createAdapter = proxyquire('./main', {
+    '@iobroker/adapter-core': {
+        Adapter: MockAdapter,
+        adapter: options => new MockAdapter(options),
+        '@noCallThru': true,
+    },
 });
 
-// ... more test suites => describe
+describe('Adapter Export and Factory', () => {
+    it('should export a factory function', () => {
+        expect(createAdapter).to.be.a('function');
+    });
+
+    it('should export the FroniusWattpilot class', () => {
+        expect(createAdapter.FroniusWattpilot).to.be.a('function');
+    });
+
+    it('should instantiate FroniusWattpilot instance via factory', () => {
+        const instance = createAdapter({ name: 'fronius-wattpilot' });
+        expect(instance).to.be.instanceOf(createAdapter.FroniusWattpilot);
+    });
+});
