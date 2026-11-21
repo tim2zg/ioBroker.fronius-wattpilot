@@ -6,9 +6,6 @@ name: Auto-Merge Dependabot PRs
 
 on:
   # Trigger when a PR is opened or updated
-  # Normally pull_request gets a GITHUB_TOKEN with read access only.
-  # But workflows run for PRs created by dependabot get write access anyway,
-  # so the less secure 'pull_request_target' trigger is not required.
   pull_request:
     types: [opened, synchronize, reopened]
 
